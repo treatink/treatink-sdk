@@ -85,6 +85,38 @@ export const STYLESHEET = `
 .tk-zoom-in:disabled, .tk-zoom-out:disabled { opacity: 0.4; cursor: default; }
 .tk-zoom-slider { flex: 1; accent-color: var(--tk-primary, #8ea0f6); }
 .tk-canvas { touch-action: none; }
+.tk-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.tk-chip {
+  background: none;
+  border: 1px solid var(--tk-primary, #8ea0f6);
+  color: inherit;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  text-transform: capitalize;
+}
+.tk-chip[aria-selected='true'] { background: var(--tk-primary, #8ea0f6); color: #1a1a1a; }
+.tk-cutout-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin-top: 10px;
+  padding-bottom: 6px;
+}
+.tk-cutout-grid { flex-wrap: wrap; overflow-x: visible; max-height: 40vh; overflow-y: auto; }
+.tk-cutout-thumb {
+  flex: 0 0 auto;
+  width: 64px;
+  height: 85px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  background: #f0f0f0;
+  cursor: pointer;
+}
+.tk-cutout-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
+.tk-cutout-thumb:focus-visible { border-color: var(--tk-accent, #ea8d00); }
 .tk-visually-hidden {
   position: absolute;
   width: 1px;

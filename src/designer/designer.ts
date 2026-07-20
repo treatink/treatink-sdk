@@ -15,8 +15,16 @@ import {
 } from '../cutout-engine/index.js';
 import type { CanvasLike, EditorImage } from '../cutout-engine/index.js';
 import type { LoadedPhoto } from '../media/exif.js';
+import { mountCutouts } from './controls/cutouts.js';
 import { TreatinkError } from '../types.js';
-import type { CopyStrings, DesignerOptions, ThemeConfig, TreatinkEvent } from '../types.js';
+import type {
+  CopyStrings,
+  DesignerOptions,
+  Page as PageOf,
+  Template,
+  ThemeConfig,
+  TreatinkEvent,
+} from '../types.js';
 
 /**
  * Designer lifecycle (P2-T01): open/close, SINGLE-instance guard, designer:open/close events.
@@ -28,6 +36,12 @@ export interface DesignerContext {
   copy: Partial<CopyStrings>;
   theme: ThemeConfig;
   emit: (event: TreatinkEvent, payload: unknown) => void;
+  /** Templates (cutout-labels) for the open SKU — transport-backed (docs/01 §4). */
+  listTemplates: (params: {
+    sku: string;
+    limit?: number;
+    cursor?: string;
+  }) => Promise<PageOf<Template>>;
 }
 
 interface ActiveDesigner {
@@ -39,6 +53,7 @@ interface ActiveDesigner {
   editor: EditorImage | null;
   isDragging: boolean;
   zoom: ZoomControl | null;
+  cutout: { template: Template; image: HTMLImageElement } | null;
 }
 
 let active: ActiveDesigner | null = null;
@@ -48,6 +63,7 @@ function render(state: ActiveDesigner): void {
   renderComposite(state.canvas as unknown as CanvasLike, {
     images: state.editor ? [state.editor] : [],
     resolveDrawable: () => state.photo?.image,
+    cutout: state.cutout?.image, // the frame PNG on top — its alpha is the mask (docs/05 §6)
     isDragging: state.isDragging, // dims the cutout to 0.6 while dragging (canvasRenderer.js:40)
   });
   if (state.editor) {
@@ -55,6 +71,16 @@ function render(state: ActiveDesigner): void {
     state.canvas.dataset['y'] = String(state.editor.y);
     state.canvas.dataset['scale'] = String(state.editor.scale);
   }
+  state.canvas.dataset['cutout'] = state.cutout?.template.cutoutLabelId ?? '';
+}
+
+/** Load the selected cutout's mask PNG, then re-render with it on top. */
+async function selectCutout(state: ActiveDesigner, template: Template): Promise<void> {
+  const image = new Image();
+  image.src = template.maskUrl;
+  await image.decode();
+  state.cutout = { template, image };
+  render(state);
 }
 
 /** Drag-to-pan (docs/05 §4, pointerHandlers.js): freeform, no clamp; scale-aware anchor. */
@@ -145,6 +171,7 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
     editor: null,
     isDragging: false,
     zoom: null,
+    cutout: null,
   };
   active = state;
 
@@ -164,6 +191,26 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
     },
   });
   wireDrag(state);
+  mountCutouts(
+    document,
+    handles.controls,
+    copy,
+    {
+      sku: options.sku,
+      ...(options.cutoutLabelId ? { preselectId: options.cutoutLabelId } : {}),
+      listTemplates: context.listTemplates,
+    },
+    {
+      onSelect: (template) => {
+        selectCutout(state, template).catch((cause: unknown) => {
+          surfaceError(
+            new TreatinkError('bad_request', 'The cutout image could not be loaded.', { cause }),
+          );
+        });
+      },
+      onError: surfaceError,
+    },
+  );
 
   handles.closeButton.addEventListener('click', () => closeDesigner());
   context.emit('designer:open', { sku: options.sku });

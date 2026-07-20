@@ -94,6 +94,12 @@ export const Treatink = {
                   copy: resolved.copy,
                   theme: resolved.theme,
                   emit: (event, payload) => bus.emit(event, payload),
+                  listTemplates: (params) =>
+                    fixtureTransport
+                      ? fixtureTransport.listTemplates(params)
+                      : Promise.reject(
+                          new TreatinkError('bad_request', 'live templates arrive with P4-T01'),
+                        ),
                 },
                 options,
               ),
