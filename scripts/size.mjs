@@ -64,4 +64,15 @@ for (const { name, files } of checks) {
     `${ok ? '✓' : '✗'} ${name}: ${kb(size)} gz (limit ${kb(limit)}) — ${files.join(', ')}`,
   );
 }
+
+// P2-T02: designer code must ship ONLY in its lazy chunk — a stray static import would inline it
+// into the loader (still possibly under 15 KB, so the budget alone would not catch it).
+const DESIGNER_MARKER = 'tk-overlay';
+for (const file of checks[0].files) {
+  if (readFileSync(join('dist', file), 'utf8').includes(DESIGNER_MARKER)) {
+    console.log(`✗ loader purity: designer code (marker '${DESIGNER_MARKER}') found in ${file}`);
+    failed = true;
+  }
+}
+if (!failed) console.log('✓ loader purity: no designer code in the loader closure');
 process.exit(failed ? 1 : 0);
