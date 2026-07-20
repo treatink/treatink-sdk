@@ -5,6 +5,7 @@
  * Assembly of the `tk` instance (wiring config → transport → namespaces → designer) is P1-T04+.
  */
 import { resolveConfig } from './config.js';
+import { FixtureTransport, type FixtureOp } from './transport/fixture-transport.js';
 import { TreatinkError } from './types.js';
 import type { Treatink as TreatinkInstance, TreatinkConfig } from './types.js';
 
@@ -51,7 +52,9 @@ export const Treatink = {
   /** Create an SDK instance. Throws key_scope_violation for non-publishable keys (docs/11 §1). */
   init(config: TreatinkConfig): TreatinkInstance {
     const resolved = resolveConfig(config);
-    // Namespaces are wired by their tasks (transport P1-T06, api P1-T08, events P1-T12,
+    // The one backend seam (docs/01 §4). HttpTransport arrives in P4-T01.
+    const fixtureTransport = resolved.mode === 'fixtures' ? new FixtureTransport() : null;
+    // Namespaces are wired by their tasks (api P1-T08, events P1-T12,
     // designer P2, drafts P3); until then each stub throws not_implemented on use.
     const tk: TreatinkInstance = {
       products: {
@@ -72,11 +75,12 @@ export const Treatink = {
       },
       orders: { buildPayload: () => notImplemented('orders.buildPayload (P3-T05)') },
       on: () => notImplemented('on (P1-T12)'),
-      ...(resolved.mode === 'fixtures'
+      ...(fixtureTransport
         ? {
             fixtures: {
-              failNext: () => notImplemented('fixtures.failNext (P1-T06)'),
-              setLatency: () => notImplemented('fixtures.setLatency (P1-T06)'),
+              failNext: (op: string, error: { status: number; code: string }) =>
+                fixtureTransport.failNext(op as FixtureOp, error),
+              setLatency: (ms: number) => fixtureTransport.setLatency(ms),
             },
           }
         : {}),
