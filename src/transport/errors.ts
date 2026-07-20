@@ -36,7 +36,37 @@ export interface ApiErrorEnvelope {
   error: { type: string; code: string; message: string; param?: string; request_id?: string };
 }
 
-/** Map a raw API error envelope to a TreatinkError. P1-T05. */
-export function fromEnvelope(_status: number, _body: ApiErrorEnvelope): TreatinkError {
-  throw new TreatinkError('not_implemented', 'fromEnvelope: implemented in P1-T05');
+export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
+export type SdkErrorCode = (typeof SDK_ERROR_CODES)[number];
+
+/** HTTP status per API code (docs/02 §4 table). Fixtures use this to emit live-identical errors. */
+export const STATUS_BY_CODE: Record<ApiErrorCode, number> = {
+  bad_request: 400,
+  invalid_cursor: 400,
+  invalid_api_key: 401,
+  insufficient_permissions: 403,
+  not_found: 404,
+  upload_quota_exceeded: 409,
+  upload_incomplete: 409,
+  upload_expired: 409,
+  asset_not_final: 409,
+  cutout_label_not_final: 409,
+  upload_too_large: 413,
+  unsupported_media_type: 415,
+  validation_error: 422,
+  upload_validation_failed: 422,
+  service_unavailable: 503,
+};
+
+/**
+ * Map a raw API error envelope to a TreatinkError. Both HttpTransport (live) and FixtureTransport
+ * route errors through here, so fixture mode produces identical error objects (Charter §11).
+ */
+export function fromEnvelope(status: number, body: ApiErrorEnvelope): TreatinkError {
+  const e = body.error;
+  return new TreatinkError(e.code, e.message, {
+    status,
+    ...(e.param !== undefined ? { param: e.param } : {}),
+    ...(e.request_id !== undefined ? { requestId: e.request_id } : {}),
+  });
 }
