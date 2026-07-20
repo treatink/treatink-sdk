@@ -5,6 +5,7 @@
  * Assembly of the `tk` instance (wiring config → transport → namespaces → designer) is P1-T04+.
  */
 import { createArtworkApi } from './api/artwork.js';
+import { createOrdersApi } from './api/orders.js';
 import { createProductsApi } from './api/products.js';
 import { createTemplatesApi } from './api/templates.js';
 import { resolveConfig } from './config.js';
@@ -166,7 +167,7 @@ export const Treatink = {
         delete: (draftId: string) => draftsStore.delete(draftId),
         clear: () => draftsStore.clear(),
       }),
-      orders: { buildPayload: () => notImplemented('orders.buildPayload (P3-T05)') },
+      orders: guard(createOrdersApi((draftId) => draftsStore.get(draftId))),
       on: (event, handler) => bus.on(event, handler),
       ...(fixtureTransport
         ? {
