@@ -10,12 +10,11 @@ import {
   computeLowRes,
   dragMove,
   dragStart,
-  exportArtifacts,
   hitTest,
   pointerToCanvas,
   renderComposite,
-  toPersistedTransform,
 } from '../cutout-engine/index.js';
+import { runSavePipeline } from '../save/pipeline.js';
 import type { CanvasLike, EditorImage, EngineEnv } from '../cutout-engine/index.js';
 import type { LoadedPhoto } from '../media/exif.js';
 import { mountCutouts } from './controls/cutouts.js';
@@ -27,9 +26,10 @@ import { ensureLabelFont } from './font.js';
 import { PET_NAME_POSITIONS } from '../cutout-engine/index.js';
 import { TreatinkError } from '../types.js';
 import type {
+  Asset,
+  AssetRole,
   CopyStrings,
   DesignerOptions,
-  DesignerResult,
   Page as PageOf,
   Product,
   Template,
@@ -57,6 +57,8 @@ export interface DesignerContext {
   }) => Promise<PageOf<Template>>;
   /** The product (variant+family) — mockup image + label_zone back the display preview (docs/05 §8.1). */
   getProduct: (sku: string) => Promise<Product>;
+  /** The two-step asset upload (docs/08 §6) — backs the save pipeline (P3-T01). */
+  uploadArtwork: (input: { role: AssetRole; file: Blob }) => Promise<Asset>;
 }
 
 interface ActiveDesigner {
@@ -123,12 +125,11 @@ function canSave(state: ActiveDesigner): boolean {
 }
 
 /**
- * P2-T11: local save — engine export → DesignerResult → onComplete → close. previewUrl is a LOCAL
- * object URL of the display composite (GP-08); artwork ids stay empty placeholders until the
- * upload-on-save pipeline (P3-T01) fills them.
+ * Save (P3-T01): the upload-on-save pipeline — engine export → two-asset upload (source +
+ * rendered, real ast_ ids) → local previewUrl → onComplete → close. Asset-based, no sessions.
  */
-async function saveLocal(state: ActiveDesigner): Promise<void> {
-  const { photo, editor, cutout, options, context } = state;
+async function save(state: ActiveDesigner): Promise<void> {
+  const { photo, editor, cutout, options } = state;
   if (!photo || !editor || !cutout) {
     throw new TreatinkError('bad_request', 'Add a photo and choose a cutout before saving.');
   }
@@ -139,12 +140,17 @@ async function saveLocal(state: ActiveDesigner): Promise<void> {
     state.fontReady = true;
   }
 
-  const artifacts = await exportArtifacts({
+  const result = await runSavePipeline({
     env: BROWSER_ENV,
-    image: editor,
-    photo: photo.image,
-    photoNatural: { width: photo.naturalWidth, height: photo.naturalHeight },
-    cutout: cutout.image,
+    sku: options.sku,
+    editor,
+    photo: {
+      drawable: photo.image,
+      naturalWidth: photo.naturalWidth,
+      naturalHeight: photo.naturalHeight,
+      file: photo.file,
+    },
+    cutout: { template: cutout.template, drawable: cutout.image },
     text: includeText
       ? {
           text: value,
@@ -152,29 +158,13 @@ async function saveLocal(state: ActiveDesigner): Promise<void> {
           theme: cutout.template.theme,
         }
       : null,
-    source: photo.file,
+    product: state.product,
     mockup: state.mockup,
-    labelZone: state.product?.labelZone ?? null,
+    upload: state.context.uploadArtwork,
   });
 
-  const result: DesignerResult = {
-    draftId: crypto.randomUUID(), // UUID v4 — also the idempotency token (docs/10 §4)
-    sku: options.sku,
-    ...(state.product ? { variantId: state.product.variantId } : {}),
-    cutoutLabelId: cutout.template.cutoutLabelId,
-    personalizationText: includeText ? value : null,
-    petNamePosition: cutout.template.petNamePosition,
-    previewUrl: URL.createObjectURL(artifacts.display),
-    artwork: { sourceAssetId: '', renderedAssetId: '' }, // P3-T01 fills the real ast_ ids
-    transform: toPersistedTransform(editor),
-    // Interpreting context for the display composite; full-canvas for no-zone products.
-    labelZone: state.product?.labelZone ?? { x: 0, y: 0, width: 1, height: 1 },
-    lowRes: artifacts.lowRes,
-  };
-
   options.onComplete?.(result);
-  // NB: no 'draft:saved' here — that event belongs to the drafts store (P3-T03); nothing persists yet.
-  void context;
+  // NB: no 'draft:saved' here — the drafts store (P3-T03) emits it when the record persists.
   closeDesigner();
 }
 
@@ -429,7 +419,7 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
   );
 
   state.save = mountSave(document, handles.controls, copy, {
-    onSave: () => saveLocal(state),
+    onSave: () => save(state),
     onError: surfaceError,
   });
 

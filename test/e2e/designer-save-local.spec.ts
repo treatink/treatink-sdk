@@ -57,7 +57,8 @@ test('save produces a well-formed DesignerResult and closes the modal', async ({
   expect(result.personalizationText).toBe('Milo');
   expect(result.petNamePosition).toBe(label.pet_name_position);
   expect(result.previewUrl).toMatch(/^blob:/); // LOCAL object URL (GP-08)
-  expect(result.artwork).toEqual({ sourceAssetId: '', renderedAssetId: '' }); // P3 fills these
+  expect(result.artwork.sourceAssetId).toMatch(/^ast_fx_/); // real ids since P3-T01
+  expect(result.artwork.renderedAssetId).toMatch(/^ast_fx_/);
   expect(result.transform.rotation).toBe(0);
   expect(result.transform.scale).toBe(1);
   expect(result.transform.x).toBe(0);

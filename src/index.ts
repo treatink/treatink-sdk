@@ -107,6 +107,12 @@ export const Treatink = {
                       : Promise.reject(
                           new TreatinkError('bad_request', 'live catalog arrives with P4-T01'),
                         ),
+                  uploadArtwork: (input) =>
+                    fixtureTransport
+                      ? createArtworkApi(fixtureTransport).upload(input)
+                      : Promise.reject(
+                          new TreatinkError('bad_request', 'live uploads arrive with P4-T01'),
+                        ),
                 },
                 options,
               ),
