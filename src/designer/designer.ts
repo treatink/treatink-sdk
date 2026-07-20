@@ -10,13 +10,17 @@ import {
   computeLowRes,
   dragMove,
   dragStart,
+  exportArtifacts,
   hitTest,
   pointerToCanvas,
   renderComposite,
+  toPersistedTransform,
 } from '../cutout-engine/index.js';
-import type { CanvasLike, EditorImage } from '../cutout-engine/index.js';
+import type { CanvasLike, EditorImage, EngineEnv } from '../cutout-engine/index.js';
 import type { LoadedPhoto } from '../media/exif.js';
 import { mountCutouts } from './controls/cutouts.js';
+import { mountSave } from './controls/save.js';
+import type { SaveControl } from './controls/save.js';
 import { mountText } from './controls/text.js';
 import type { TextControl } from './controls/text.js';
 import { ensureLabelFont } from './font.js';
@@ -25,7 +29,9 @@ import { TreatinkError } from '../types.js';
 import type {
   CopyStrings,
   DesignerOptions,
+  DesignerResult,
   Page as PageOf,
+  Product,
   Template,
   ThemeConfig,
   TreatinkEvent,
@@ -49,6 +55,8 @@ export interface DesignerContext {
     limit?: number;
     cursor?: string;
   }) => Promise<PageOf<Template>>;
+  /** The product (variant+family) — mockup image + label_zone back the display preview (docs/05 §8.1). */
+  getProduct: (sku: string) => Promise<Product>;
 }
 
 interface ActiveDesigner {
@@ -67,6 +75,107 @@ interface ActiveDesigner {
   lowRes: boolean;
   lowResWarning: HTMLElement | null;
   lowResCopy: string;
+  save: SaveControl | null;
+  product: Product | null;
+  mockup: { drawable: HTMLImageElement; width: number; height: number } | null;
+}
+
+/** Browser EngineEnv: DOM canvas + toBlob, injected at the edge (docs/01 §6). */
+const BROWSER_ENV: EngineEnv = {
+  createCanvas(width, height) {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    return canvas as unknown as CanvasLike;
+  },
+  toBlob(canvas) {
+    const element = canvas as unknown as HTMLCanvasElement;
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const settle = (blob: Blob | null, error?: unknown) => {
+        if (settled) return;
+        settled = true;
+        if (blob) resolve(blob);
+        else reject(error instanceof Error ? error : new Error('canvas encode failed'));
+      };
+      element.toBlob((blob) => settle(blob), 'image/png'); // full quality, like the store (docs/05 §8)
+      // Chromium can defer the toBlob encode callback for MANY seconds after FontFace text has
+      // been drawn (observed ~7 s). If it stalls, fall back to the synchronous encoder.
+      setTimeout(() => {
+        if (settled) return;
+        try {
+          const dataUrl = element.toDataURL('image/png');
+          const bytes = atob(dataUrl.slice(dataUrl.indexOf(',') + 1));
+          const buffer = new Uint8Array(bytes.length);
+          for (let i = 0; i < bytes.length; i++) buffer[i] = bytes.charCodeAt(i);
+          settle(new Blob([buffer], { type: 'image/png' }));
+        } catch (error) {
+          settle(null, error);
+        }
+      }, 1500);
+    });
+  },
+};
+
+/** Save/close both consult this: photo + cutout are required for a save (P2-T11). */
+function canSave(state: ActiveDesigner): boolean {
+  return Boolean(state.photo && state.editor && state.cutout);
+}
+
+/**
+ * P2-T11: local save — engine export → DesignerResult → onComplete → close. previewUrl is a LOCAL
+ * object URL of the display composite (GP-08); artwork ids stay empty placeholders until the
+ * upload-on-save pipeline (P3-T01) fills them.
+ */
+async function saveLocal(state: ActiveDesigner): Promise<void> {
+  const { photo, editor, cutout, options, context } = state;
+  if (!photo || !editor || !cutout) {
+    throw new TreatinkError('bad_request', 'Add a photo and choose a cutout before saving.');
+  }
+  const value = state.text.value.trim();
+  const includeText = state.text.enabled && value !== '';
+  if (includeText && !state.fontReady) {
+    await ensureLabelFont(document);
+    state.fontReady = true;
+  }
+
+  const artifacts = await exportArtifacts({
+    env: BROWSER_ENV,
+    image: editor,
+    photo: photo.image,
+    photoNatural: { width: photo.naturalWidth, height: photo.naturalHeight },
+    cutout: cutout.image,
+    text: includeText
+      ? {
+          text: value,
+          framePosition: cutout.template.petNamePosition,
+          theme: cutout.template.theme,
+        }
+      : null,
+    source: photo.file,
+    mockup: state.mockup,
+    labelZone: state.product?.labelZone ?? null,
+  });
+
+  const result: DesignerResult = {
+    draftId: crypto.randomUUID(), // UUID v4 — also the idempotency token (docs/10 §4)
+    sku: options.sku,
+    ...(state.product ? { variantId: state.product.variantId } : {}),
+    cutoutLabelId: cutout.template.cutoutLabelId,
+    personalizationText: includeText ? value : null,
+    petNamePosition: cutout.template.petNamePosition,
+    previewUrl: URL.createObjectURL(artifacts.display),
+    artwork: { sourceAssetId: '', renderedAssetId: '' }, // P3-T01 fills the real ast_ ids
+    transform: toPersistedTransform(editor),
+    // Interpreting context for the display composite; full-canvas for no-zone products.
+    labelZone: state.product?.labelZone ?? { x: 0, y: 0, width: 1, height: 1 },
+    lowRes: artifacts.lowRes,
+  };
+
+  options.onComplete?.(result);
+  // NB: no 'draft:saved' here — that event belongs to the drafts store (P3-T03); nothing persists yet.
+  void context;
+  closeDesigner();
 }
 
 let active: ActiveDesigner | null = null;
@@ -111,6 +220,8 @@ function render(state: ActiveDesigner): void {
     if (state.lowResWarning) state.lowResWarning.hidden = !lowRes;
     state.handles.liveRegion.textContent = lowRes ? state.lowResCopy : '';
   }
+
+  state.save?.setEnabled(canSave(state)); // photo + cutout required; low-res never blocks
 }
 
 /** Load the selected cutout's mask PNG, then re-render with it on top. */
@@ -219,8 +330,30 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
     lowRes: false,
     lowResWarning: null,
     lowResCopy: copy.lowResWarning,
+    save: null,
+    product: null,
+    mockup: null,
   };
   active = state;
+
+  // Product (variant+family) backs the display-composite preview; failures are non-fatal —
+  // the preview falls back to the bare print composite (docs/05 §8.1).
+  void context
+    .getProduct(options.sku)
+    .then((product) => {
+      state.product = product;
+      const mockup = new Image();
+      mockup.crossOrigin = 'anonymous'; // mockup must be CORS-readable (docs/05 §8.1)
+      mockup.src = product.images.catalogImageUrl;
+      return mockup.decode().then(() => {
+        state.mockup = {
+          drawable: mockup,
+          width: mockup.naturalWidth,
+          height: mockup.naturalHeight,
+        };
+      });
+    })
+    .catch(() => undefined);
 
   // Low-res warning line under the preview (hidden until the flag trips).
   const lowResWarning = document.createElement('p');
@@ -294,6 +427,11 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
       onError: surfaceError,
     },
   );
+
+  state.save = mountSave(document, handles.controls, copy, {
+    onSave: () => saveLocal(state),
+    onError: surfaceError,
+  });
 
   handles.closeButton.addEventListener('click', () => closeDesigner());
   context.emit('designer:open', { sku: options.sku });

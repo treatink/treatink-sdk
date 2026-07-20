@@ -101,6 +101,12 @@ export const Treatink = {
                       : Promise.reject(
                           new TreatinkError('bad_request', 'live templates arrive with P4-T01'),
                         ),
+                  getProduct: (sku) =>
+                    fixtureTransport
+                      ? fixtureTransport.getProduct(sku)
+                      : Promise.reject(
+                          new TreatinkError('bad_request', 'live catalog arrives with P4-T01'),
+                        ),
                 },
                 options,
               ),

@@ -134,6 +134,20 @@ export const STYLESHEET = `
   padding: 9px 12px;
   font-size: 15px;
 }
+.tk-save { margin-top: 20px; }
+.tk-save-button {
+  width: 100%;
+  background: var(--tk-accent, #ea8d00);
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
+  padding: 13px 16px;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tk-save-button:disabled { opacity: 0.4; cursor: default; }
+.tk-save-error { color: #b3261e; margin-top: 8px; font-size: 14px; }
 .tk-visually-hidden {
   position: absolute;
   width: 1px;
