@@ -125,7 +125,7 @@ describe('privacy guard (docs/02 §6, docs/06 §6)', () => {
       expect(value.length).toBeLessThan(4096);
       expect(value).not.toContain('data:image');
       expect(value).not.toContain('blob:');
-      expect(() => JSON.parse(value)).not.toThrow(); // small JSON, never a Blob
+      expect(() => JSON.parse(value) as unknown).not.toThrow(); // small JSON, never a Blob
     }
   });
 });

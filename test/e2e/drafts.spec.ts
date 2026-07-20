@@ -44,7 +44,7 @@ test('a successful save writes the reference DraftRecord and fires draft:saved',
   await saveOnce(page);
   const drafts = await page.evaluate(() => window.tk.drafts.list());
   expect(drafts).toHaveLength(1);
-  const draft = drafts[0]! as DraftRecord;
+  const draft: DraftRecord = drafts[0]!;
   const result = await page.evaluate(() => window.__completions[0]!);
   expect(draft.draftId).toBe(result.draftId);
   expect(draft.artwork).toEqual(result.artwork);
@@ -71,7 +71,7 @@ test('persistence gate: stored values are small JSON — never image bytes', asy
     expect(value.length).toBeLessThan(4096);
     expect(value).not.toContain('data:image');
     expect(value).not.toContain('blob:');
-    expect(() => JSON.parse(value)).not.toThrow();
+    expect(() => JSON.parse(value) as unknown).not.toThrow();
   }
 });
 
