@@ -1,0 +1,11 @@
+{
+ "id": "chn_fx_0000000000000000000000000001",
+ "name": "Riley's Pets",
+ "mode": "test",
+ "key_class": "publishable",
+ "permissions": [
+  "artwork_upload",
+  "catalog_read",
+  "channel_read"
+ ]
+}

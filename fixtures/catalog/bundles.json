@@ -1,0 +1,18 @@
+[
+ {
+  "id": "bnd_fx_00000001",
+  "name": "4x Bundle",
+  "description": "Exclusive deal when you buy as a set!",
+  "animal_type": "dog",
+  "currency": "USD",
+  "raw_total_cents": 4196,
+  "discount_cents": 500,
+  "suggested_retail_cents": 3696,
+  "variant_ids": [
+   "var_fx_00000001",
+   "var_fx_00000004",
+   "var_fx_00000008",
+   "var_fx_00000011"
+  ]
+ }
+]

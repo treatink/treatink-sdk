@@ -1,4 +1,7 @@
 import { TreatinkError } from '../types.js';
+import type { Page, Product, Template } from '../types.js';
+import type { ChannelInfo } from './transport.js';
+import { toPage, toProduct, toTemplate } from '../catalog/adapter.js';
 import { SDK_ERROR_CODES, fromEnvelope, type ApiErrorEnvelope } from './errors.js';
 
 /**
@@ -279,6 +282,9 @@ const EMPTY_DATASET: FixtureDataset = {
   cutoutLabels: [],
 };
 
+/** cur_fx_ cursors survive one page fetch to the next; the fixture set is small enough to scan. */
+const FULL_PAGE: PageParamsWire = { limit: 100 };
+
 interface PendingRecord {
   declared: ArtworkPendingWire;
   bytes: Blob | null;
@@ -287,7 +293,8 @@ interface PendingRecord {
 }
 
 export class FixtureTransport {
-  readonly #data: FixtureDataset;
+  readonly #dataOverride: Partial<FixtureDataset> | null;
+  #datasetPromise: Promise<FixtureDataset> | null = null;
   readonly #measure: ((bytes: Blob) => Promise<{ width: number; height: number }>) | null;
   #latencyMs = 0;
   #requestSeq = 0;
@@ -302,8 +309,19 @@ export class FixtureTransport {
     /** Optional real-dimension probe (browser). Default: docs/08's example dims. */
     measure?: (bytes: Blob) => Promise<{ width: number; height: number }>;
   }) {
-    this.#data = { ...EMPTY_DATASET, ...options?.data };
+    this.#dataOverride = options?.data ?? null;
     this.#measure = options?.measure ?? null;
+  }
+
+  /**
+   * Explicit data overrides win (tests); otherwise the SHIPPED dataset loads lazily so its
+   * ~250 KB of catalog JSON stays out of the loader chunk (docs/06 §2 budget).
+   */
+  #dataset(): Promise<FixtureDataset> {
+    this.#datasetPromise ??= this.#dataOverride
+      ? Promise.resolve({ ...EMPTY_DATASET, ...this.#dataOverride })
+      : import('../catalog/fixture-dataset.js').then((m) => m.dataset);
+    return this.#datasetPromise;
   }
 
   /* ── Test controls (Charter §11) ── */
@@ -322,27 +340,77 @@ export class FixtureTransport {
 
   async channel(): Promise<ChannelWire> {
     await this.#begin('channel.get');
-    return structuredClone(this.#data.channel);
+    return structuredClone((await this.#dataset()).channel);
   }
 
   async catalogProducts(params?: PageParamsWire): Promise<CatalogPageWire<ProductWire>> {
     await this.#begin('products.list');
-    return this.#paginate(this.#data.products, params);
+    return this.#paginate((await this.#dataset()).products, params);
   }
 
   async catalogVariants(params?: PageParamsWire): Promise<CatalogPageWire<VariantWire>> {
     await this.#begin('variants.list');
-    return this.#paginate(this.#data.variants, params);
+    return this.#paginate((await this.#dataset()).variants, params);
   }
 
   async catalogBundles(params?: PageParamsWire): Promise<CatalogPageWire<BundleWire>> {
     await this.#begin('bundles.list');
-    return this.#paginate(this.#data.bundles, params);
+    return this.#paginate((await this.#dataset()).bundles, params);
   }
 
   async catalogCutoutLabels(params?: PageParamsWire): Promise<CatalogPageWire<CutoutLabelWire>> {
     await this.#begin('cutoutLabels.list');
-    return this.#paginate(this.#data.cutoutLabels, params);
+    return this.#paginate((await this.#dataset()).cutoutLabels, params);
+  }
+
+  /* ── Normalized (Charter-shaped) catalog — the adapter joins wire → public model ── */
+
+  async getChannel(): Promise<ChannelInfo> {
+    const c = await this.channel();
+    return {
+      id: c.id,
+      name: c.name,
+      mode: c.mode,
+      keyClass: c.key_class,
+      permissions: c.permissions,
+    };
+  }
+
+  /** A public "product" is a live variant joined to its family (docs/04 §2.4). */
+  async listProducts(params?: PageParamsWire): Promise<Page<Product>> {
+    const page = await this.catalogVariants(params);
+    const familyById = new Map((await this.#dataset()).products.map((p) => [p.id, p]));
+    return toPage(page, (v) => this.#joinProduct(v, familyById));
+  }
+
+  async getProduct(sku: string): Promise<Product> {
+    const page = await this.catalogVariants(FULL_PAGE);
+    const variant = page.data.find((v) => v.sku === sku);
+    if (!variant) {
+      throw this.#apiError(404, 'not_found', { param: 'sku' });
+    }
+    const familyById = new Map((await this.#dataset()).products.map((p) => [p.id, p]));
+    return this.#joinProduct(variant, familyById);
+  }
+
+  /**
+   * Cutout labels are a universal 900×1200 set (docs/04 §2.5) — `sku` is accepted for the
+   * Charter-shaped surface but does not filter in MVP fixtures.
+   */
+  async listTemplates(params: { sku: string } & PageParamsWire): Promise<Page<Template>> {
+    const page = await this.catalogCutoutLabels({
+      ...(params.limit !== undefined ? { limit: params.limit } : {}),
+      ...(params.cursor !== undefined ? { cursor: params.cursor } : {}),
+    });
+    return toPage(page, toTemplate);
+  }
+
+  #joinProduct(variant: VariantWire, familyById: Map<string, ProductWire>): Product {
+    const family = familyById.get(variant.product_id);
+    if (!family) {
+      throw this.#apiError(404, 'not_found', { param: 'product_id' });
+    }
+    return toProduct(variant, family);
   }
 
   /** 6a — POST /v1/assets. Client computes sha256 + size_bytes first. */

@@ -3,3 +3,5 @@
 *.md
 docs/
 phases/
+# Generated wire fixtures (scripts/gen-fixtures.mjs) — data, not code; don't churn on restyle
+fixtures/

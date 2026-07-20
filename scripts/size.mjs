@@ -1,14 +1,14 @@
 // Bundle-budget gate (docs/06 §2): loader ≤ 15 KB gz, designer chunk ≤ 150 KB gz.
-// Wraps size-limit because the designer chunk does not exist until P2 — size-limit hard-fails on a
-// missing path. The designer budget activates automatically the moment the chunk is built; until
-// then this logs loudly that it is pending (never a silent cap). Budgets live HERE, one place.
-import { readdirSync, writeFileSync, rmSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
+// Measures the FILES tsup emitted (no re-bundling): re-bundling would follow dynamic imports and
+// wrongly charge lazy chunks (fixture dataset, HEIC decoder) to the loader — Charter §13 says lazy
+// chunks are "not counted in the two above". Loader = the entry + its STATIC chunk deps.
+// The designer budget activates automatically once its chunk exists (P2); until then this logs
+// loudly that it is pending (never a silent cap). Budgets live HERE, one place.
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { gzipSync } from 'node:zlib';
 
-const BUDGETS = [
-  { name: 'loader', path: 'dist/index.js', limit: '15 KB', gzip: true },
-  { name: 'designer chunk', path: 'dist/designer-*.js', limit: '150 KB', gzip: true },
-];
+const LIMITS = { loader: 15 * 1024, 'designer chunk': 150 * 1024 };
 
 let dist = [];
 try {
@@ -18,19 +18,50 @@ try {
   process.exit(2);
 }
 
-const hasDesigner = dist.some((f) => /^designer-.*\.js$/.test(f));
-const entries = BUDGETS.filter((b) => b.name !== 'designer chunk' || hasDesigner);
-if (!hasDesigner) {
+/** Entry file + every file it (transitively) STATICALLY imports. Dynamic imports excluded. */
+function staticClosure(entry) {
+  const seen = new Set();
+  const queue = [entry];
+  while (queue.length > 0) {
+    const file = queue.shift();
+    if (seen.has(file) || !dist.includes(file)) continue;
+    seen.add(file);
+    const src = readFileSync(join('dist', file), 'utf8');
+    // tsup emits ESM: static imports are top-level `import|export … from './x.js'`.
+    for (const m of src.matchAll(/^(?:import|export)[^;]*?from\s*['"]\.\/([^'"]+)['"]/gm)) {
+      queue.push(m[1]);
+    }
+  }
+  return [...seen];
+}
+
+function gzSize(files) {
+  return files.reduce(
+    (sum, f) => sum + gzipSync(readFileSync(join('dist', f)), { level: 9 }).length,
+    0,
+  );
+}
+
+const kb = (n) => `${(n / 1024).toFixed(2)} KB`;
+const checks = [{ name: 'loader', files: staticClosure('index.js') }];
+
+const designerEntry = dist.find((f) => /^designer-.*\.js$/.test(f));
+if (designerEntry) {
+  checks.push({ name: 'designer chunk', files: staticClosure(designerEntry) });
+} else {
   console.log(
     'size: designer chunk not built yet (arrives in P2) — its 150 KB budget is NOT evaluated this run.',
   );
 }
 
-// size-limit reads package.json before rc files, so config must not live there; we generate the rc.
-writeFileSync('.size-limit.json', JSON.stringify(entries, null, 2) + '\n');
-const r = spawnSync('npx', ['size-limit'], {
-  stdio: 'inherit',
-  shell: process.platform === 'win32',
-});
-rmSync('.size-limit.json', { force: true });
-process.exit(r.status ?? 1);
+let failed = false;
+for (const { name, files } of checks) {
+  const size = gzSize(files);
+  const limit = LIMITS[name];
+  const ok = size <= limit;
+  failed ||= !ok;
+  console.log(
+    `${ok ? '✓' : '✗'} ${name}: ${kb(size)} gz (limit ${kb(limit)}) — ${files.join(', ')}`,
+  );
+}
+process.exit(failed ? 1 : 0);

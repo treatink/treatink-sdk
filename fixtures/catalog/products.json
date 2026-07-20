@@ -1,0 +1,101 @@
+[
+ {
+  "id": "prd_fx_00000001",
+  "title": "Training Treats for Dogs (6oz)",
+  "description": "Vet-recommended and designed to inspire, our Training Treats are packed with irresistible flavor to keep your dog engaged and eager to learn. Made in the USA with premium, wholesome ingredients, these treats support effective training while ensuring your dog’s well-being. Perfect for rewarding good behavior, they’re a healthy choice you can trust. Elevate your training sessions with high-quality treats that keep dogs engaged and focused – where quality and taste meet!",
+  "animal_type": "dog",
+  "category": "treats",
+  "product_type": "treats",
+  "status": "active"
+ },
+ {
+  "id": "prd_fx_00000002",
+  "title": "Crunchy Treats for Cats (4oz)",
+  "description": "Crafted with premium protein and wholesome ingredients like brown rice, sweet potato, and coconut oil, these crunchy Cat Treats deliver real protein in every bite. More than just a tasty reward, their crunchy texture helps clean teeth and supports dental health—no wheat, corn, soy, or artificial flavors here. Keep your feline friends purring with delight and eagerly awaiting their next treat!",
+  "animal_type": "cat",
+  "category": "treats",
+  "product_type": "treats",
+  "status": "active"
+ },
+ {
+  "id": "prd_fx_00000003",
+  "title": "Healthy Treats for Dogs (6oz)",
+  "description": "Spoil your dog with a heart-shaped, tail-wagging treat crafted from premium skinless chicken as the star ingredient, delivering the protein-rich flavor pups adore. This grain-free, gluten-free formula is specially designed for sensitive tummies, leaving out fillers and focusing on wholesome goodness. Bursting with smoky hickory flavor, these delightful heart-shaped goodies are so tasty your furry pal will be pleading for seconds. Free of artificial additives, they offer pure, chewy satisfaction in every loving bite—perfect for everyday rewards or celebrating your good boy or girl with a treat that shows your heart!",
+  "animal_type": "dog",
+  "category": "treats",
+  "product_type": "treats",
+  "status": "active"
+ },
+ {
+  "id": "prd_fx_00000004",
+  "title": "Chew Sticks for Dogs 8 ct.",
+  "description": "Blueberry & Coconut Chews are beneficial for dental health. The special star shape helps to get into small spaces between your dogs and gums to remove plaque. A naturally delicious option that’s gentle on sensitive stomachs, these chews can be broken into smaller pieces depending on the size of your dog.",
+  "animal_type": "dog",
+  "category": "health",
+  "product_type": "dental_treats",
+  "status": "active"
+ },
+ {
+  "id": "prd_fx_00000005",
+  "title": "Bananas & Bacon Dog Treats (6oz)",
+  "description": "Delicious dog treats with sweet bananas, crispy bacon, and a hint of peanut butter—now that’s a combo worth barking about. These irresistible treats will have your pup doing their happy dance in no time. And with coat-supporting omegas in every bite, they’ll be looking as good as they feel. Over 40% of this product is made with upcycled bananas and sunflower seeds.",
+  "animal_type": "dog",
+  "category": "treats",
+  "product_type": "soft_treats",
+  "status": "active"
+ },
+ {
+  "id": "prd_fx_00000006",
+  "title": "Catnip Crunchies Cat Treats (2.5oz)",
+  "description": "Catnip & Chicken Recipe just got even better. These crunchy, star-shaped bites are made with real chicken, sweet potatoes, and fresh catnip to spark playful energy. With added prebiotics and probiotics, they help support healthy digestion. Over 20% of each bag is made with upcycled sweet potatoes and catnip.",
+  "animal_type": "cat",
+  "category": "treats",
+  "product_type": "treats",
+  "status": "active"
+ },
+ {
+  "id": "prd_fx_00000007",
+  "title": "Chew Sticks for Dogs 8 ct.",
+  "description": "Pumpkin & Honey Chews are beneficial for dental health. The special star shape helps to get into small spaces between your dogs and gums to remove plaque. A naturally delicious option that’s gentle on sensitive stomachs, these chews can be broken into smaller pieces depending on the size of your dog.",
+  "animal_type": "dog",
+  "category": "treats",
+  "product_type": "dental_treats",
+  "status": "active"
+ },
+ {
+  "id": "prd_fx_00000008",
+  "title": "MINI Chew Sticks for Dogs 12oz",
+  "description": "Pumpkin & Honey Mini Chew Sticks are perfect for small breed dogs dental health. The special star shape helps to get into small spaces between your dogs and gums to remove plaque. A naturally delicious option that’s gentle on sensitive stomachs.\n\nApproximately 30 mini chew sticks.",
+  "animal_type": "dog",
+  "category": "treats",
+  "product_type": "dental_treats",
+  "status": "active"
+ },
+ {
+  "id": "prd_fx_00000009",
+  "title": "Pumpkin Spice Treats for Horses 12 oz",
+  "description": "Pumpkin Spice Horse Treats are a wholesome, nutritious reward designed to support your horse’s health and happiness. Made with real pumpkin, anise spice, and a blend of high-quality ingredients, these treats are gently processed using nutrient extrusion to enhance digestibility and maximize nutrient absorption.",
+  "animal_type": "horse",
+  "category": "treats",
+  "product_type": "treats",
+  "status": "active"
+ },
+ {
+  "id": "prd_fx_00000010",
+  "title": "Multivitamin Soft Chews 120ct",
+  "description": "Support your dog’s everyday health with Treatink Multivitamin Soft Chews! Packed with essential vitamins and minerals, these tasty chews help promote healthy skin, coat, joints, and digestion. Perfect for daily wellness in one delicious bite!",
+  "animal_type": "dog",
+  "category": "treats",
+  "product_type": "soft_treats",
+  "status": "active"
+ },
+ {
+  "id": "prd_fx_00000011",
+  "title": "Peanut Butter & Molasses Baked Biscuits Small Bone (12oz)",
+  "description": "Riley’s Organic Peanut Butter Dog Treats are crafted with USDA-certified organic ingredients to give your pup a crunchy, flavorful snack that’s wholesome and gentle on sensitive stomachs. Made with dog-safe peanut butter, these vegan, non-GMO treats provide quality fats, protein, antioxidants, and vitamins B and E. Their crisp texture helps reduce plaque and tartar, and their small size makes them perfect for training or everyday rewarding. Proudly made in the USA.",
+  "animal_type": "dog",
+  "category": "treats",
+  "product_type": "biscuits",
+  "status": "active"
+ }
+]
