@@ -52,3 +52,4 @@ Thumbs.db
 *.mov
 *.wmv
 
+.size-limit.json

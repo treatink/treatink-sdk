@@ -1,0 +1,30 @@
+# CI (docs/06 §8): verify + golden + e2e + no-secret on every push. Green CI is the phase exit
+# condition (plus per-phase extras in phases/00-overview.md).
+image: node:22
+
+definitions:
+  caches:
+    npm: ~/.npm
+
+pipelines:
+  default:
+    - step:
+        name: Verify (typecheck · lint · test · size · golden · no-secret)
+        caches:
+          - npm
+        script:
+          - npm ci
+          - npm run build
+          - npm run verify
+          - npm run test:golden
+          - npm run check:no-secret
+    - step:
+        name: E2E + a11y (fixtures mode)
+        caches:
+          - npm
+        script:
+          - npm ci
+          - npx playwright install --with-deps chromium webkit
+          - npm run build
+          - npm run test:e2e
+          - npm run test:a11y
