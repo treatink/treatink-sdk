@@ -26,7 +26,11 @@ export const API_ERROR_CODES = [
 ] as const;
 
 /** SDK-local codes — never come from the wire. */
-export const SDK_ERROR_CODES = ['key_scope_violation', 'unsupported_file_type', 'upload_failed'] as const;
+export const SDK_ERROR_CODES = [
+  'key_scope_violation',
+  'unsupported_file_type',
+  'upload_failed',
+] as const;
 
 export interface ApiErrorEnvelope {
   error: { type: string; code: string; message: string; param?: string; request_id?: string };

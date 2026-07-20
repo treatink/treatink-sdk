@@ -17,7 +17,12 @@ export interface Transport {
   listTemplates(params: { sku: string } & PageParams): Promise<Page<Template>>;
 
   /** Step 1: declare an asset → get a presigned upload authorization. */
-  declareAsset(input: { role: AssetRole; contentType: string; sizeBytes: number; sha256: string }): Promise<PendingAsset>;
+  declareAsset(input: {
+    role: AssetRole;
+    contentType: string;
+    sizeBytes: number;
+    sha256: string;
+  }): Promise<PendingAsset>;
   /** Step 2: PUT the raw bytes to the presigned URL (no-op in fixtures). Surfaces upload_failed. */
   putAssetBytes(upload: UploadAuthorization, file: Blob): Promise<void>;
   /** Step 3: finalize → the immutable final asset (no URL is returned by the API; docs/04 §2.3). */

@@ -6,7 +6,9 @@
   "license": "UNLICENSED",
   "private": true,
   "sideEffects": false,
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -20,7 +22,9 @@
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
@@ -55,7 +59,17 @@
     "vitest": "^2.1.1"
   },
   "size-limit": [
-    { "name": "loader", "path": "dist/index.js", "limit": "15 KB", "gzip": true },
-    { "name": "designer chunk", "path": "dist/designer-*.js", "limit": "150 KB", "gzip": true }
+    {
+      "name": "loader",
+      "path": "dist/index.js",
+      "limit": "15 KB",
+      "gzip": true
+    },
+    {
+      "name": "designer chunk",
+      "path": "dist/designer-*.js",
+      "limit": "150 KB",
+      "gzip": true
+    }
   ]
 }

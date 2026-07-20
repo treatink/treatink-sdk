@@ -43,7 +43,9 @@ try {
 }
 
 if (failed) {
-  console.error('\ncheck:no-secret FAILED — the browser bundle must not contain any secret-key path.');
+  console.error(
+    '\ncheck:no-secret FAILED — the browser bundle must not contain any secret-key path.',
+  );
   process.exit(1);
 }
 console.log('✓ check:no-secret: browser bundle is clean.');

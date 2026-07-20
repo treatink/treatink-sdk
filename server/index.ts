@@ -23,7 +23,8 @@ export interface SubmitOrderResult {
   externalOrderId: string;
 }
 
-export async function submitOrder(
+// Not `async` while a stub (require-await); P3-T06 makes it async when it actually awaits fetch.
+export function submitOrder(
   _payload: OrderPayload,
   _options: SubmitOrderOptions,
 ): Promise<SubmitOrderResult> {

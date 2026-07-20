@@ -1,0 +1,5 @@
+# Authored blueprint prose — content is ground truth; don't churn it for formatting
+# (docs/02 §: "do not reformat untouched code"). Code files stay prettier-enforced.
+*.md
+docs/
+phases/

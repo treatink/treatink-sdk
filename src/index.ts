@@ -6,10 +6,9 @@
  */
 import { assertPublishableKey } from './config.js';
 import { TreatinkError } from './types.js';
-import type { Treatink, TreatinkConfig } from './types.js';
+import type { Treatink as TreatinkInstance, TreatinkConfig } from './types.js';
 
 export type {
-  Treatink,
   TreatinkConfig,
   ThemeConfig,
   CopyStrings,
@@ -30,9 +29,12 @@ export type {
 } from './types.js';
 export { TreatinkError } from './types.js';
 
+/** The instance interface (docs/10 §2), merged with the `Treatink` entry value below. */
+export type Treatink = TreatinkInstance;
+
 export const Treatink = {
   /** Create an SDK instance. Throws key_scope_violation for non-publishable keys (docs/11 §1). */
-  init(config: TreatinkConfig): Treatink {
+  init(config: TreatinkConfig): TreatinkInstance {
     assertPublishableKey(config.apiKey);
     // P1-T04+: resolveConfig → build transport (fixtures|http) → namespaces → designer → event bus.
     throw new TreatinkError('not_implemented', 'Treatink.init: assembled from P1-T04 onward');
