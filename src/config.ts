@@ -36,8 +36,25 @@ export function assertPublishableKey(apiKey: string): void {
   }
 }
 
-export function resolveConfig(_config: TreatinkConfig): ResolvedConfig {
-  // P1-T04: validate apiKey (assertPublishableKey) + channel present, apply defaults
-  // (mode:'fixtures', apiBaseUrl, maxPersonalizationLength), merge theme/copy defaults.
-  throw new TreatinkError('not_implemented', 'resolveConfig: implemented in P1-T04');
+export function resolveConfig(config: TreatinkConfig): ResolvedConfig {
+  assertPublishableKey(config.apiKey);
+  if (typeof config.channel !== 'string' || config.channel.trim() === '') {
+    throw new TreatinkError(
+      'bad_request',
+      'Treatink.init requires `channel` — the registered storefront hostname.',
+      { param: 'channel' },
+    );
+  }
+  return {
+    apiKey: config.apiKey,
+    channel: config.channel,
+    // Default 'fixtures' until the live API is wired (docs/09).
+    mode: config.mode ?? 'fixtures',
+    apiBaseUrl: config.apiBaseUrl ?? DEFAULT_API_BASE_URL,
+    maxPersonalizationLength: config.maxPersonalizationLength ?? DEFAULT_MAX_PERSONALIZATION_LENGTH,
+    debug: config.debug ?? false,
+    // Designer theme/copy defaults are P2-T04; init only carries the overrides through.
+    theme: { ...config.theme },
+    copy: { ...config.copy },
+  };
 }
