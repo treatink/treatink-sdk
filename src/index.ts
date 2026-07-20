@@ -142,6 +142,7 @@ export const Treatink = {
                     });
                     bus.emit('draft:saved', { draftId: result.draftId, sku: result.sku });
                   },
+                  getDraft: (draftId) => draftsStore.get(draftId),
                 },
                 options,
               ),

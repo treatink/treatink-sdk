@@ -13,6 +13,7 @@ import {
   hitTest,
   pointerToCanvas,
   renderComposite,
+  restoreImage,
 } from '../cutout-engine/index.js';
 import { runSavePipeline } from '../save/pipeline.js';
 import type { CanvasLike, EditorImage, EngineEnv } from '../cutout-engine/index.js';
@@ -31,6 +32,7 @@ import type {
   CopyStrings,
   DesignerOptions,
   DesignerResult,
+  DraftRecord,
   Page as PageOf,
   Product,
   Template,
@@ -62,6 +64,8 @@ export interface DesignerContext {
   uploadArtwork: (input: { role: AssetRole; file: Blob }) => Promise<Asset>;
   /** Persist the reference DraftRecord + emit draft:saved — only after a successful save (P3-T03). */
   saveDraft: (result: DesignerResult) => void;
+  /** Look up a saved draft for re-open (P3-T04). */
+  getDraft: (draftId: string) => DraftRecord | null;
 }
 
 interface ActiveDesigner {
@@ -83,6 +87,8 @@ interface ActiveDesigner {
   save: SaveControl | null;
   product: Product | null;
   mockup: { drawable: HTMLImageElement; width: number; height: number } | null;
+  /** Draft transform awaiting the re-selected photo (P3-T04); consumed on first accept. */
+  restoredTransform: DraftRecord['transform'] | null;
 }
 
 /** Browser EngineEnv: DOM canvas + toBlob, injected at the edge (docs/01 §6). */
@@ -266,11 +272,21 @@ function wireDrag(state: ActiveDesigner): void {
 function acceptPhoto(state: ActiveDesigner, photo: LoadedPhoto): void {
   if (state.photo) URL.revokeObjectURL(state.photo.objectUrl);
   state.photo = photo;
-  // Fresh upload → the store's initial fit (docs/05 §3); naturalWidth/Height are EXIF-upright.
-  state.editor = {
-    id: crypto.randomUUID(),
-    ...computeInitialFit(photo.naturalWidth, photo.naturalHeight),
-  };
+  const fit = computeInitialFit(photo.naturalWidth, photo.naturalHeight);
+  if (state.restoredTransform) {
+    // Draft re-open (P3-T04): fitted box + maxScale derive from the re-selected photo; the
+    // draft's x/y/scale/rotation flow through the store's ||-fallback restore path (docs/05 §3).
+    const restored = restoreImage(
+      { ...state.restoredTransform, width: fit.width, height: fit.height, maxScale: fit.maxScale },
+      photo.naturalWidth,
+      photo.naturalHeight,
+    );
+    state.editor = { id: crypto.randomUUID(), ...restored };
+    state.restoredTransform = null; // one-shot: a replacement photo re-fits fresh
+  } else {
+    // Fresh upload → the store's initial fit (docs/05 §3); naturalWidth/Height are EXIF-upright.
+    state.editor = { id: crypto.randomUUID(), ...fit };
+  }
   // Oriented dimensions exposed for tests/AT context.
   state.canvas.dataset['naturalWidth'] = String(photo.naturalWidth);
   state.canvas.dataset['naturalHeight'] = String(photo.naturalHeight);
@@ -291,6 +307,14 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
   }
 
   const copy = resolveCopy(context.copy);
+
+  // Draft re-open (P3-T04): restore METADATA — cutout, transform, text, zone. The photo is NOT
+  // re-hydrated (no bytes stored; a pk key cannot GET the source asset back — docs/10 §6): the
+  // shopper re-selects it; re-save creates a fresh draft + assets. Documented limitation.
+  const draft = options.draftId ? context.getDraft(options.draftId) : null;
+  const draftMissing = Boolean(options.draftId && !draft);
+  const preselectCutoutId = options.cutoutLabelId ?? draft?.cutout.cutoutLabelId;
+
   const handles = mountModal(
     document,
     { headerTitle: copy.headerTitle, closeLabel: copy.closeLabel },
@@ -317,7 +341,10 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
     isDragging: false,
     zoom: null,
     cutout: null,
-    text: { enabled: false, value: options.personalizationText ?? '' },
+    text: {
+      enabled: Boolean(draft?.personalizationText),
+      value: draft?.personalizationText ?? options.personalizationText ?? '',
+    },
     textControl: null,
     fontReady: false,
     lowRes: false,
@@ -326,6 +353,7 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
     save: null,
     product: null,
     mockup: null,
+    restoredTransform: draft?.transform ?? null,
   };
   active = state;
 
@@ -360,6 +388,12 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
     options.onError?.(error);
     context.emit('error', error);
   };
+  if (draftMissing) {
+    // Unknown/expired draftId: surface not_found; the modal continues as a fresh design.
+    surfaceError(
+      new TreatinkError('not_found', 'The requested draft no longer exists.', { param: 'draftId' }),
+    );
+  }
   mountUpload(document, handles.controls, copy, {
     onPhoto: (photo) => acceptPhoto(state, photo),
     onError: surfaceError,
@@ -377,7 +411,8 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
     handles.controls,
     copy,
     {
-      ...(options.personalizationText ? { value: options.personalizationText } : {}),
+      ...(state.text.value ? { value: state.text.value } : {}),
+      ...(state.text.enabled ? { enabled: true } : {}),
       maxLength: context.maxPersonalizationLength,
     },
     {
@@ -406,7 +441,8 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
     copy,
     {
       sku: options.sku,
-      ...(options.cutoutLabelId ? { preselectId: options.cutoutLabelId } : {}),
+      // explicit option wins; else the re-opened draft's cutout (P3-T04)
+      ...(preselectCutoutId ? { preselectId: preselectCutoutId } : {}),
       listTemplates: context.listTemplates,
     },
     {
@@ -425,6 +461,16 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
     onSave: () => save(state),
     onError: surfaceError,
   });
+
+  if (state.text.enabled) {
+    // Restored text renders as soon as Mitr is ready (draft re-open).
+    void ensureLabelFont(document)
+      .then(() => {
+        state.fontReady = true;
+        render(state);
+      })
+      .catch(() => undefined);
+  }
 
   handles.closeButton.addEventListener('click', () => closeDesigner());
   context.emit('designer:open', { sku: options.sku });

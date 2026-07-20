@@ -20,7 +20,7 @@ export function mountText(
   doc: Document,
   host: HTMLElement,
   copy: Pick<CopyStrings, 'personalizationTextLabel' | 'personalizationTextPlaceholder'>,
-  initial: { value?: string; maxLength: number },
+  initial: { value?: string; enabled?: boolean; maxLength: number },
   hooks: TextHooks,
 ): TextControl {
   const root = doc.createElement('div');
@@ -41,8 +41,9 @@ export function mountText(
   input.placeholder = copy.personalizationTextPlaceholder;
   input.setAttribute('aria-label', copy.personalizationTextLabel);
   input.maxLength = initial.maxLength;
-  input.hidden = true;
   if (initial.value) input.value = initial.value.slice(0, initial.maxLength);
+  toggle.checked = initial.enabled ?? false; // draft re-open restores the toggle (P3-T04)
+  input.hidden = !toggle.checked;
 
   const emit = () => hooks.onChange(toggle.checked, input.value);
   toggle.addEventListener('change', () => {
