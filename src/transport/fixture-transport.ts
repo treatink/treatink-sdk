@@ -1,6 +1,6 @@
 import { TreatinkError } from '../types.js';
-import type { Page, Product, Template } from '../types.js';
-import type { ChannelInfo } from './transport.js';
+import type { Asset, AssetRole, Page, Product, Template } from '../types.js';
+import type { ChannelInfo, PendingAsset, Transport, UploadAuthorization } from './transport.js';
 import { toPage, toProduct, toTemplate } from '../catalog/adapter.js';
 import { SDK_ERROR_CODES, fromEnvelope, type ApiErrorEnvelope } from './errors.js';
 
@@ -292,7 +292,7 @@ interface PendingRecord {
   final: ArtworkFinalWire | null;
 }
 
-export class FixtureTransport {
+export class FixtureTransport implements Transport {
   readonly #dataOverride: Partial<FixtureDataset> | null;
   #datasetPromise: Promise<FixtureDataset> | null = null;
   readonly #measure: ((bytes: Blob) => Promise<{ width: number; height: number }>) | null;
@@ -403,6 +403,54 @@ export class FixtureTransport {
       ...(params.cursor !== undefined ? { cursor: params.cursor } : {}),
     });
     return toPage(page, toTemplate);
+  }
+
+  /* ── Normalized asset flow (Transport interface; wire ↔ camelCase mapping) ── */
+
+  async declareAsset(input: {
+    role: AssetRole;
+    contentType: string;
+    sizeBytes: number;
+    sha256: string;
+  }): Promise<PendingAsset> {
+    const wire = await this.assetsDeclare({
+      role: input.role,
+      content_type: input.contentType,
+      size_bytes: input.sizeBytes,
+      sha256: input.sha256,
+    });
+    return {
+      id: wire.id,
+      role: wire.role,
+      status: 'pending',
+      upload: {
+        method: 'PUT',
+        url: wire.upload.url,
+        headers: wire.upload.headers,
+        expiresAt: wire.upload.expires_at,
+      },
+      pendingExpiresAt: wire.pending_expires_at,
+    };
+  }
+
+  async putAssetBytes(upload: UploadAuthorization, file: Blob): Promise<void> {
+    await this.assetsPut(
+      { method: 'PUT', url: upload.url, headers: upload.headers, expires_at: upload.expiresAt },
+      file,
+    );
+  }
+
+  async finalizeAsset(assetId: string): Promise<Asset> {
+    const wire = await this.assetsFinalize(assetId);
+    return {
+      id: wire.id,
+      role: wire.role,
+      status: 'final',
+      contentType: wire.content_type,
+      width: wire.width,
+      height: wire.height,
+      sha256: wire.sha256,
+    };
   }
 
   #joinProduct(variant: VariantWire, familyById: Map<string, ProductWire>): Product {

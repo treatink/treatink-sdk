@@ -4,6 +4,9 @@
  *
  * Assembly of the `tk` instance (wiring config → transport → namespaces → designer) is P1-T04+.
  */
+import { createArtworkApi } from './api/artwork.js';
+import { createProductsApi } from './api/products.js';
+import { createTemplatesApi } from './api/templates.js';
 import { resolveConfig } from './config.js';
 import { FixtureTransport, type FixtureOp } from './transport/fixture-transport.js';
 import { TreatinkError } from './types.js';
@@ -57,12 +60,19 @@ export const Treatink = {
     // Namespaces are wired by their tasks (api P1-T08, events P1-T12,
     // designer P2, drafts P3); until then each stub throws not_implemented on use.
     const tk: TreatinkInstance = {
-      products: {
-        list: () => notImplemented('products.list (P1-T08)'),
-        get: () => notImplemented('products.get (P1-T08)'),
-      },
-      templates: { list: () => notImplemented('templates.list (P1-T08)') },
-      artwork: { upload: () => notImplemented('artwork.upload (P1-T08)') },
+      // Live-mode transport is HttpTransport (P4-T01); until then live namespaces stay stubs.
+      products: fixtureTransport
+        ? createProductsApi(fixtureTransport)
+        : {
+            list: () => notImplemented('products.list (live: P4-T01)'),
+            get: () => notImplemented('products.get (live: P4-T01)'),
+          },
+      templates: fixtureTransport
+        ? createTemplatesApi(fixtureTransport)
+        : { list: () => notImplemented('templates.list (live: P4-T01)') },
+      artwork: fixtureTransport
+        ? createArtworkApi(fixtureTransport)
+        : { upload: () => notImplemented('artwork.upload (live: P4-T01)') },
       designer: {
         open: () => notImplemented('designer.open (P2-T01)'),
         close: () => notImplemented('designer.close (P2-T01)'),
