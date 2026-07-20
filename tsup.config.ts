@@ -17,6 +17,9 @@ export default defineConfig([
     treeshake: true,
     clean: true,
     sourcemap: true,
+    // The browser bundle is self-contained (no third-party fetches, no bare imports on a partner
+    // page — docs/11 §2). Runtime deps bundle in; the dynamic import keeps heic2any a lazy chunk.
+    noExternal: ['heic2any', 'exifr'],
   },
   {
     entry: { 'server/index': 'server/index.ts' },

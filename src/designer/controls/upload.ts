@@ -1,5 +1,6 @@
-import { loadOrientedPhoto } from '../../media/exif.js';
+import { assertIngestableSize, loadOrientedPhoto } from '../../media/exif.js';
 import type { LoadedPhoto } from '../../media/exif.js';
+import { isHeic, transcodeHeicToJpeg } from '../../media/heic.js';
 import { TreatinkError } from '../../types.js';
 import type { CopyStrings } from '../../types.js';
 
@@ -57,7 +58,14 @@ export function mountUpload(
     if (!file) return;
     setError(null);
     try {
-      hooks.onPhoto(await loadOrientedPhoto(file));
+      // HEIC transcodes to JPEG first (lazy decoder chunk, P2-T06). Size-check the ORIGINAL
+      // before decoding; the decoded JPEG then flows through the normal ingest validation.
+      let ingestable: Blob & { type: string } = file;
+      if (isHeic(file)) {
+        assertIngestableSize(file);
+        ingestable = await transcodeHeicToJpeg(file);
+      }
+      hooks.onPhoto(await loadOrientedPhoto(ingestable));
     } catch (cause) {
       const err =
         cause instanceof TreatinkError
