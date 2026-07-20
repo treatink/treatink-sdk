@@ -18,11 +18,21 @@ export interface ModalHandles {
   preview: HTMLElement;
   controls: HTMLElement;
   closeButton: HTMLButtonElement;
-  /** Remove the modal and undo the scroll lock. */
+  /** Polite live region for AT announcements (low-res warning etc., P2-T10). */
+  liveRegion: HTMLElement;
+  /** Remove the modal, undo the scroll lock, restore focus to the pre-open element. */
   unmount(): void;
 }
 
-export function mountModal(doc: Document, copy: ModalCopy): ModalHandles {
+const FOCUSABLE =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), ' +
+  'textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+export function mountModal(
+  doc: Document,
+  copy: ModalCopy,
+  hooks: { onRequestClose: () => void },
+): ModalHandles {
   ensureStyles(doc);
 
   const overlay = doc.createElement('div');
@@ -54,22 +64,56 @@ export function mountModal(doc: Document, copy: ModalCopy): ModalHandles {
   controls.className = 'tk-controls';
   body.append(preview, controls);
 
-  modal.append(header, body);
+  // Polite live region — announcements (e.g. the low-res warning) without stealing focus.
+  const liveRegion = doc.createElement('div');
+  liveRegion.className = 'tk-live tk-visually-hidden';
+  liveRegion.setAttribute('aria-live', 'polite');
+
+  modal.append(header, body, liveRegion);
   overlay.appendChild(modal);
+
+  // Focus management (Charter §7.3): remember the opener, trap Tab inside, Escape closes,
+  // restore focus on unmount.
+  const previouslyFocused = doc.activeElement instanceof HTMLElement ? doc.activeElement : null;
+  const onKeydown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      hooks.onRequestClose();
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const focusables = [...overlay.querySelectorAll<HTMLElement>(FOCUSABLE)];
+    if (focusables.length === 0) return;
+    const first = focusables[0]!;
+    const last = focusables[focusables.length - 1]!;
+    const current = doc.activeElement;
+    if (event.shiftKey && (current === first || !overlay.contains(current))) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && (current === last || !overlay.contains(current))) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+  overlay.addEventListener('keydown', onKeydown);
 
   // Scroll-lock the page behind (Charter §7.1); restore the exact prior value on unmount.
   const previousOverflow = doc.body.style.overflow;
   doc.body.style.overflow = 'hidden';
   doc.body.appendChild(overlay);
+  closeButton.focus(); // initial focus lands inside the dialog
 
   return {
     overlay,
     preview,
     controls,
     closeButton,
+    liveRegion,
     unmount() {
+      overlay.removeEventListener('keydown', onKeydown);
       overlay.remove();
       doc.body.style.overflow = previousOverflow;
+      if (previouslyFocused?.isConnected) previouslyFocused.focus();
     },
   };
 }

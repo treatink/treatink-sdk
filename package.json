@@ -35,7 +35,7 @@
     "test:golden": "vitest run test/golden",
     "harness": "npm run build && node scripts/harness.mjs",
     "test:e2e": "playwright test --pass-with-no-tests",
-    "test:a11y": "playwright test test/a11y --pass-with-no-tests",
+    "test:a11y": "playwright test designer-a11y --pass-with-no-tests",
     "size": "node scripts/size.mjs",
     "check:no-secret": "node scripts/check-no-secret.mjs",
     "verify": "npm run typecheck && npm run lint && npm run test && npm run size"

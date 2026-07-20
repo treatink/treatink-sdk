@@ -34,10 +34,14 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
     return;
   }
 
-  const handles = mountModal(document, {
-    headerTitle: context.copy.headerTitle ?? 'Personalize Your Product',
-    closeLabel: context.copy.closeLabel ?? 'Close',
-  });
+  const handles = mountModal(
+    document,
+    {
+      headerTitle: context.copy.headerTitle ?? 'Personalize Your Product',
+      closeLabel: context.copy.closeLabel ?? 'Close',
+    },
+    { onRequestClose: () => closeDesigner() },
+  );
   active = { handles, options, context };
 
   handles.closeButton.addEventListener('click', () => closeDesigner());

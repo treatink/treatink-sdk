@@ -38,15 +38,24 @@ export const STYLESHEET = `
   justify-content: space-between;
   padding: 14px 18px;
 }
-.tk-title { font-size: 18px; font-weight: 600; }
+/* 24px = WCAG "large text" — the default white-on-#f26b1d header passes at the 3:1 threshold. */
+.tk-title { font-size: 24px; font-weight: 600; }
 .tk-close {
   background: none;
   border: none;
   color: inherit;
-  font-size: 22px;
+  font-size: 24px;
   line-height: 1;
   cursor: pointer;
   padding: 4px 8px;
+}
+.tk-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 .tk-body {
   display: flex;
