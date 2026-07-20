@@ -6,6 +6,10 @@
 # Node artifact files
 node_modules/
 dist/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
 
 # Compiled Java class files
 *.class
