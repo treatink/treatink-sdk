@@ -1,0 +1,256 @@
+# 10 · Public Types (frozen contract)
+
+The public TypeScript surface of `@treatink/sdk`. **This is the contract** — `src/types.ts` must
+match it, `index.ts` exports exactly these, and no public symbol exists that isn't here (`docs/02`
+§2). It supersedes Charter §6 where the two differ; the deltas (asset model, no sessions, real error
+codes) are listed in §9 with rationale.
+
+Adopted decisions baked in: no `sessions` namespace (GP-18), two-step asset upload (GP-04), local
+preview (GP-08), real error codes (GP-06).
+
+## 1. Entry
+
+```ts
+const tk: Treatink = Treatink.init(config: TreatinkConfig);
+
+interface TreatinkConfig {
+  apiKey: string;                 // publishable only: 'pk_test_…' | 'pk_live_…'.
+                                  //   'sk_…' (or any non-pk_) throws key_scope_violation (§7)
+  channel: string;                // registered storefront hostname (e.g. 'rileyspets.com')
+  mode?: 'live' | 'fixtures';     // default 'fixtures' until the live API is wired (docs/09)
+  apiBaseUrl?: string;            // override for staging; default https://api.treatink.com
+  theme?: ThemeConfig;
+  copy?: Partial<CopyStrings>;
+  debug?: boolean;
+}
+```
+
+## 2. Instance
+
+```ts
+interface Treatink {
+  products:  ProductsApi;
+  templates: TemplatesApi;        // cutout-labels
+  artwork:   ArtworkApi;          // two-step asset upload
+  designer:  DesignerApi;
+  drafts:    DraftsApi;
+  orders:    OrdersApi;           // buildPayload only (browser, no network)
+  on(event: TreatinkEvent, handler: (payload: unknown) => void): () => void;
+  fixtures?: FixturesApi;         // present only in mode:'fixtures'
+}
+
+type TreatinkEvent = 'designer:open' | 'designer:close' | 'draft:saved' | 'error';
+```
+
+> **No `sessions` namespace** — the backend is asset-based (GP-18). The designer's save orchestrates
+> assets internally.
+
+## 3. Namespaces
+
+```ts
+interface ProductsApi {
+  list(params?: { limit?: number; cursor?: string }): Promise<Page<Product>>;
+  get(sku: string): Promise<Product>;                  // resolves SKU → its variant (docs/04 §2.4)
+}
+
+interface TemplatesApi {                               // cutout-labels
+  list(params: { sku: string; limit?: number; cursor?: string }): Promise<Page<Template>>;
+}
+
+interface ArtworkApi {
+  // Runs the full two-step flow (declare → PUT bytes → finalize) and returns the final asset.
+  upload(input: { role: AssetRole; file: Blob; sha256?: string }): Promise<Asset>;
+}
+type AssetRole = 'source' | 'rendered';
+
+interface DesignerApi {
+  open(options: DesignerOptions): void;
+  close(): void;
+}
+
+interface DraftsApi {
+  list(): DraftRecord[];
+  get(draftId: string): DraftRecord | null;
+  delete(draftId: string): void;
+  clear(): void;
+}
+
+interface OrdersApi {
+  buildPayload(input: BuildPayloadInput): OrderPayload;   // pure; no network, nothing secret
+}
+
+interface FixturesApi {
+  failNext(op: string, error: { status: number; code: string }): void;
+  setLatency(ms: number): void;
+}
+```
+
+## 4. Designer options & result
+
+```ts
+interface DesignerOptions {
+  sku: string;                              // required
+  draftId?: string;                         // re-open a saved draft (re-save creates a new draft)
+  personalizationText?: string;             // prefill
+  cutoutLabelId?: string;                   // preselect a cutout (was templateKey)
+  onComplete?(result: DesignerResult): void;
+  onError?(error: TreatinkError): void;
+  onClose?(): void;
+}
+
+interface DesignerResult {
+  draftId: string;                          // UUID v4 — also the idempotency token
+  sku: string;
+  variantId?: string;                       // resolved 'var_…'
+  cutoutLabelId: string;                    // 'cut_…' (was templateKey)
+  personalizationText?: string | null;
+  petNamePosition?: PetNamePosition;
+  previewUrl: string;                       // LOCAL object URL of the DISPLAY composite —
+                                            //   product mockup + label in label_zone (docs/05 §8.1); not uploaded
+  artwork: { sourceAssetId: string; renderedAssetId: string };   // 'ast_…' ids (GP-08: no URLs)
+  transform: Transform;                     // docs/05 §2
+  labelZone: LabelZone;                     // interpreting context (docs/05 §9)
+  lowRes: boolean;                          // docs/05 §8
+}
+
+type PetNamePosition = 'default' | 'top' | 'upper' | 'bottom';
+// Transform is in 900×1200 print-canvas pixels and is self-contained for print re-render (docs/05 §8.2).
+interface Transform  { x: number; y: number; scale: number; rotation: number }  // rotation 0 in MVP
+interface LabelZone  { x: number; y: number; width: number; height: number }     // normalized
+```
+
+## 5. Catalog models (SDK-normalized; wire shapes in `docs/08`)
+
+```ts
+interface Product {
+  sku: string; variantId: string; productId: string;
+  title: string; description?: string;
+  animalType?: 'cat' | 'dog' | 'horse';
+  category?: string; productType?: string; status: string;
+  priceCents: number; currency: string;
+  images: { catalogImageUrl: string; regulatoryLabelUrl?: string };
+  labelZone: LabelZone | null;              // null for no-zone products (edge case)
+}
+
+interface Template {                        // a cutout-label
+  cutoutLabelId: string;                    // 'cut_…'
+  title: string;
+  category: 'standard' | 'holidays' | 'birthdays' | 'occasions';
+  theme: 'light' | 'dark';
+  petNamePosition: PetNamePosition;
+  tags: string[];
+  maskUrl: string;                          // the cutout PNG (alpha = the mask)
+  canvas: { width: 900; height: 1200 };
+  opening: OpeningGeometry;                 // precomputed alpha geometry (docs/08 §5) — not decoded at runtime
+  maxTextLength?: number;                   // personalization-text cap. NOT in the backend model —
+                                            //   SDK falls back to config `maxPersonalizationLength`
+                                            //   (default 20); visual auto-shrink still applies (docs/05 §7)
+}
+
+interface Asset {                           // finalized artwork asset
+  id: string;                               // 'ast_…'
+  role: AssetRole;
+  status: 'final';
+  contentType: string; width: number; height: number; sha256: string;
+}
+
+interface Page<T> { data: T[]; hasMore: boolean; nextCursor: string | null }
+type OpeningGeometry = { /* alphaThreshold, fullyTransparentBounds, centerTransparentComponent,
+                            largestSafeTransparentRectangle, … — see docs/08 §5 */ };
+```
+
+## 6. Draft record (localStorage — references only, GP-05)
+
+```ts
+// keys: treatink:v1:<channel>:index  and  treatink:v1:<channel>:draft:<draftId>
+interface DraftRecord {
+  draftId: string;                          // UUID v4 — idempotency token
+  createdAt: string; updatedAt: string;
+  channel: string;
+  product: { sku: string; variantId?: string };
+  cutout:  { cutoutLabelId: string; petNamePosition?: PetNamePosition };
+  personalizationText?: string | null;
+  transform: Transform;
+  labelZone: LabelZone;
+  artwork: { sourceAssetId: string; renderedAssetId: string };   // remote refs (ids). NO image bytes, NO URLs
+  status: 'completed' | 'ordered';
+}
+```
+
+**Re-open behavior (MVP).** `designer.open({ draftId })` restores all *metadata* (cutout, transform,
+text, zone). It **cannot** re-hydrate the original photo pixels: no image bytes are stored (Charter
+§9) and a publishable key cannot GET the uploaded `source` asset back (`docs/04` §2.3, GP-08). So MVP
+re-open of a draft restores the layout and asks the shopper to re-select the photo to edit it;
+re-saving creates a fresh draft + assets (in-place re-edit is deferred, Charter §2). *Known
+limitation — documented, not a bug.*
+
+## 7. Errors (GP-06)
+
+```ts
+class TreatinkError extends Error {
+  code: string;        // API codes (docs/02 §4) + SDK-local: key_scope_violation,
+                       //   unsupported_file_type, upload_failed
+  status?: number;
+  param?: string;
+  requestId?: string;
+}
+```
+
+## 8. Theme, copy, order payload
+
+```ts
+interface ThemeConfig {                     // → --tk-* CSS vars (docs/design-reference §3)
+  primary?: string;          // default #8EA0F6
+  accent?: string;           // default #EA8D00
+  headerBackground?: string; // default #F26B1D
+  headerText?: string;
+  surface?: string;
+  borderRadius?: string;     // default '15px'
+  fontFamily?: string;       // Montserrat/Mitr + system fallback
+  overlayColor?: string;
+  zIndex?: number;           // default 2147483000
+  logo?: string | false;
+}
+
+interface CopyStrings {                     // every user-visible designer string — all overridable
+  headerTitle: string;                 // 'Personalize Your Product'
+  closeLabel: string;
+  uploadPrompt: string;                // 'Drag & drop your photo'
+  uploadButton: string;                // 'Or Select Image'
+  zoomInLabel: string; zoomOutLabel: string; zoomSliderLabel: string;
+  categoryAll: string;                 // 'Browse All'
+  personalizationTextLabel: string;    // 'Include Pet Name on Label' (Riley's) / 'Personalization Text'
+  personalizationTextPlaceholder: string;
+  lowResWarning: string;
+  saveButton: string;                  // 'Save Customization'
+  savingLabel: string; saveErrorRetry: string;
+  genericError: string;
+}
+
+interface BuildPayloadInput {
+  externalOrderId: string;
+  channelOrderNumber?: string;
+  currency: string; paymentStatus: string;
+  customer: { email: string; firstName?: string; lastName?: string };
+  shippingAddress?: ShippingAddress;
+  lines: Array<{
+    externalLineItemId?: string;
+    draftId: string;                   // pulls variantId, asset ids, personalization from the draft
+    quantity: number; unitPriceCents: number; subtotalCents?: number;
+  }>;
+}
+// OrderPayload = the exact wire body in docs/08 §7 (snake_case, personalization block). Assembled here.
+```
+
+## 9. Deltas from Charter §6 (rationale)
+
+| Charter §6 | This contract | Why |
+|---|---|---|
+| `tk.sessions.create/get` | **removed** | no sessions in the backend (GP-18) |
+| `tk.artwork.upload({ sessionId, slot, file })` | `upload({ role, file })` | two-step asset model, roles `source`/`rendered` (GP-04) |
+| `DesignerResult.sessionId`, `templateKey`, `artwork{originalUrl,printUrl}` | `cutoutLabelId`, `artwork{sourceAssetId,renderedAssetId}`, local `previewUrl` | assets not sessions; pk can't read asset URLs (GP-08) |
+| `transform {x,y,scale}` | `+ rotation` | store model carries rotation (`docs/05`; 0 in MVP) |
+| error codes `session_*`, `channel_not_registered`, `invalid_request` | real API codes | GP-06 / GP-19 |
+
+Everything else (config, theme, copy, drafts semantics, `orders.buildPayload`, events) follows the
+Charter.
