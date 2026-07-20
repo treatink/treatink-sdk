@@ -8,8 +8,8 @@ Start with the first **runnable** task (`docs/03` §3): `todo`, all `depends_on`
 gate passed, not blocked.
 
 - **Project:** `@treatink/sdk` MVP (native modal + publishable-key client, fixtures-first)
-- **Current phase:** P2 · Designer (entry gate: P1 exit green → ✅)
-- **Next runnable:** `P2-T01` (Modal shell + lifecycle)
+- **Current phase:** P3 · Save Path (entry gate: P2 exit green → ✅)
+- **Next runnable:** `P3-T01` (Upload-on-save pipeline)
 - **RETRY_BUDGET:** 3 per task
 - **Scaffold:** repo skeleton laid down (pinned toolchain + `src/` architecture + typed stubs +
   test/fixtures structure). P1-T01/T03 are now *verify* tasks, not *create* tasks. Stubs throw
@@ -22,8 +22,8 @@ gate passed, not blocked.
 | Phase | Status | Entry gate | Exit gate |
 |---|---|---|---|
 | P1 Core | **done** ✅ | blueprint present ✅ | exit gate green 2026-07-20 (130 tests) |
-| P2 Designer | todo | P1 exit green ✅ | `verify` + `test:e2e` + `test:a11y` + budgets |
-| P3 Save Path | todo | P2 exit green | full `test:e2e` happy path + persistence + no-secret |
+| P2 Designer | **done** ✅ | P1 exit green ✅ | exit gate green 2026-07-20 (135 e2e + 15 a11y; budgets hold) |
+| P3 Save Path | todo | P2 exit green ✅ | full `test:e2e` happy path + persistence + no-secret |
 | P4 Live & Pilot | todo | P3 exit green | live smoke green **or** blockers parked; published |
 
 ## Task ledger
@@ -47,17 +47,17 @@ gate passed, not blocked.
 ### P2 · Designer
 | ID | Status | depends_on | Title |
 |---|---|---|---|
-| P2-T01 | todo | P1 exit | Modal shell + lifecycle |
-| P2-T02 | todo | P2-T01 | Lazy designer chunk + loader budget |
-| P2-T03 | todo | P2-T01 | Accessibility scaffold |
-| P2-T04 | todo | P2-T01 | Theming + copy overrides |
-| P2-T05 | todo | P2-T01 | Photo input (drag-drop + picker, EXIF) |
-| P2-T06 | todo | P2-T05 | HEIC lazy transcode |
-| P2-T07 | todo | P2-T01, P2-T05 | Positioning (drag + zoom controls) |
-| P2-T08 | todo | P2-T01, P1-T07 | Cutout browser (chips + row + Browse All) |
-| P2-T09 | todo | P2-T01, P2-T07 | Personalization text |
-| P2-T10 | todo | P2-T07 | Low-res warning |
-| P2-T11 | todo | P2-T07, P2-T09 | Save CTA (local composite → onComplete) |
+| P2-T01 | done | P1 exit | Modal shell + lifecycle |
+| P2-T02 | done | P2-T01 | Lazy designer chunk + loader budget |
+| P2-T03 | done | P2-T01 | Accessibility scaffold |
+| P2-T04 | done | P2-T01 | Theming + copy overrides |
+| P2-T05 | done | P2-T01 | Photo input (drag-drop + picker, EXIF) |
+| P2-T06 | done | P2-T05 | HEIC lazy transcode |
+| P2-T07 | done | P2-T01, P2-T05 | Positioning (drag + zoom controls) |
+| P2-T08 | done | P2-T01, P1-T07 | Cutout browser (chips + row + Browse All) |
+| P2-T09 | done | P2-T01, P2-T07 | Personalization text |
+| P2-T10 | done | P2-T07 | Low-res warning |
+| P2-T11 | done | P2-T07, P2-T09 | Save CTA (local composite → onComplete) |
 
 ### P3 · Save Path
 | ID | Status | depends_on | Title |
@@ -128,3 +128,15 @@ _Newest last. One line per completed task or phase transition:_
 - P1-T10 done — npm test -- cutout-engine && lint green (31 tests) — 2df95f6
 - P1-T11 done — npm run test:golden green (38 tests; 0% pixel diff vs store baselines) — 01e0810
 - Phase P1 complete — exit gate green (verify + test:golden + check:no-secret; 130 tests)
+- P2-T01 done — test:e2e designer-shell green (15 tests, 3 browsers) — d152691
+- P2-T02 done — size green (loader 7.76 KB, designer 1.79 KB, purity check) — 0f7b398
+- P2-T03 done — test:a11y + designer-a11y e2e green (15 tests) — ab985fe
+- P2-T04 done — test:e2e designer-theming green (9 tests) — 1ad30e8
+- P2-T05 done — test:e2e designer-upload green (18 tests; full suite 57) — 6ec6ce5
+- P2-T06 done — test:e2e designer-heic + size green (6 tests; fixed bare-import packaging bug) — 54c0a0e
+- P2-T07 done — test:e2e designer-position green (18 tests) — 5edf98d
+- P2-T08 done — test:e2e designer-cutouts green (18 tests) — 2357939
+- P2-T09 done — test:e2e designer-text green (15 tests; Mitr bundled as lazy chunk) — 26ce15a
+- P2-T10 done — test:e2e designer-lowres green (9 tests) — 2378bb4
+- P2-T11 done — test:e2e designer-save-local green (12 tests; Chromium toBlob-stall fallback) — b4452b9
+- Phase P2 complete — exit gate green (verify + 135 e2e + 15 a11y + budgets + no-secret)
