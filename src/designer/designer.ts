@@ -1,9 +1,18 @@
 import { resolveCopy } from './copy.js';
 import { mountUpload } from './controls/upload.js';
+import { mountZoom } from './controls/zoom.js';
+import type { ZoomControl } from './controls/zoom.js';
 import { mountModal } from './modal.js';
 import type { ModalHandles } from './modal.js';
 import { applyTheme, resolveTheme } from './theme.js';
-import { computeInitialFit, renderComposite } from '../cutout-engine/index.js';
+import {
+  computeInitialFit,
+  dragMove,
+  dragStart,
+  hitTest,
+  pointerToCanvas,
+  renderComposite,
+} from '../cutout-engine/index.js';
 import type { CanvasLike, EditorImage } from '../cutout-engine/index.js';
 import type { LoadedPhoto } from '../media/exif.js';
 import { TreatinkError } from '../types.js';
@@ -28,6 +37,8 @@ interface ActiveDesigner {
   canvas: HTMLCanvasElement;
   photo: LoadedPhoto | null;
   editor: EditorImage | null;
+  isDragging: boolean;
+  zoom: ZoomControl | null;
 }
 
 let active: ActiveDesigner | null = null;
@@ -37,7 +48,48 @@ function render(state: ActiveDesigner): void {
   renderComposite(state.canvas as unknown as CanvasLike, {
     images: state.editor ? [state.editor] : [],
     resolveDrawable: () => state.photo?.image,
+    isDragging: state.isDragging, // dims the cutout to 0.6 while dragging (canvasRenderer.js:40)
   });
+  if (state.editor) {
+    state.canvas.dataset['x'] = String(state.editor.x);
+    state.canvas.dataset['y'] = String(state.editor.y);
+    state.canvas.dataset['scale'] = String(state.editor.scale);
+  }
+}
+
+/** Drag-to-pan (docs/05 §4, pointerHandlers.js): freeform, no clamp; scale-aware anchor. */
+function wireDrag(state: ActiveDesigner): void {
+  const { canvas } = state;
+  let anchor: { x: number; y: number } | null = null;
+
+  canvas.addEventListener('pointerdown', (event) => {
+    if (!state.editor) return;
+    const rect = canvas.getBoundingClientRect();
+    const mouse = pointerToCanvas(event.clientX, event.clientY, rect);
+    const hit = hitTest([state.editor], mouse.x, mouse.y);
+    if (hit === null) return;
+    event.preventDefault();
+    canvas.setPointerCapture(event.pointerId);
+    anchor = dragStart(state.editor, mouse.x, mouse.y);
+    state.isDragging = true;
+  });
+  canvas.addEventListener('pointermove', (event) => {
+    if (!anchor || !state.editor) return;
+    const rect = canvas.getBoundingClientRect();
+    const mouse = pointerToCanvas(event.clientX, event.clientY, rect);
+    const next = dragMove(state.editor, anchor, mouse.x, mouse.y);
+    state.editor.x = next.x;
+    state.editor.y = next.y;
+    render(state);
+  });
+  const end = () => {
+    if (!anchor) return;
+    anchor = null;
+    state.isDragging = false;
+    render(state);
+  };
+  canvas.addEventListener('pointerup', end);
+  canvas.addEventListener('pointercancel', end);
 }
 
 function acceptPhoto(state: ActiveDesigner, photo: LoadedPhoto): void {
@@ -51,6 +103,7 @@ function acceptPhoto(state: ActiveDesigner, photo: LoadedPhoto): void {
   // Oriented dimensions exposed for tests/AT context.
   state.canvas.dataset['naturalWidth'] = String(photo.naturalWidth);
   state.canvas.dataset['naturalHeight'] = String(photo.naturalHeight);
+  state.zoom?.enable(state.editor.maxScale, state.editor.scale);
   render(state);
 }
 
@@ -83,7 +136,16 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
   canvas.setAttribute('aria-label', copy.headerTitle);
   handles.preview.appendChild(canvas);
 
-  const state: ActiveDesigner = { handles, options, context, canvas, photo: null, editor: null };
+  const state: ActiveDesigner = {
+    handles,
+    options,
+    context,
+    canvas,
+    photo: null,
+    editor: null,
+    isDragging: false,
+    zoom: null,
+  };
   active = state;
 
   const surfaceError = (error: TreatinkError) => {
@@ -94,6 +156,14 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
     onPhoto: (photo) => acceptPhoto(state, photo),
     onError: surfaceError,
   });
+  state.zoom = mountZoom(document, handles.controls, copy, {
+    onScale: (scale) => {
+      if (!state.editor) return;
+      state.editor.scale = scale;
+      render(state);
+    },
+  });
+  wireDrag(state);
 
   handles.closeButton.addEventListener('click', () => closeDesigner());
   context.emit('designer:open', { sku: options.sku });

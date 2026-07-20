@@ -71,6 +71,20 @@ export const STYLESHEET = `
   cursor: pointer;
 }
 .tk-upload-error { color: #b3261e; margin-top: 8px; font-size: 14px; }
+.tk-zoom { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+.tk-zoom-in, .tk-zoom-out {
+  background: var(--tk-primary, #8ea0f6);
+  color: #1a1a1a;
+  border: none;
+  border-radius: 5px;
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+  cursor: pointer;
+}
+.tk-zoom-in:disabled, .tk-zoom-out:disabled { opacity: 0.4; cursor: default; }
+.tk-zoom-slider { flex: 1; accent-color: var(--tk-primary, #8ea0f6); }
+.tk-canvas { touch-action: none; }
 .tk-visually-hidden {
   position: absolute;
   width: 1px;
