@@ -90,7 +90,11 @@ export const Treatink = {
           void import('./designer/designer.js')
             .then((m) =>
               m.openDesigner(
-                { copy: resolved.copy, emit: (event, payload) => bus.emit(event, payload) },
+                {
+                  copy: resolved.copy,
+                  theme: resolved.theme,
+                  emit: (event, payload) => bus.emit(event, payload),
+                },
                 options,
               ),
             )

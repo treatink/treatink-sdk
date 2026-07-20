@@ -17,6 +17,7 @@
         tk.on(event, (payload) => window.__events.push({ event, payload }));
       }
       window.tk = tk;
+      window.Treatink = Treatink; // lets specs init custom-themed instances
       document.getElementById('open-designer').addEventListener('click', () => {
         tk.designer.open({ sku: 'SSGTTBC' });
       });

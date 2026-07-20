@@ -1,16 +1,19 @@
+import { resolveCopy } from './copy.js';
 import { mountModal } from './modal.js';
 import type { ModalHandles } from './modal.js';
+import { applyTheme, resolveTheme } from './theme.js';
 import { TreatinkError } from '../types.js';
-import type { DesignerOptions, TreatinkEvent } from '../types.js';
+import type { CopyStrings, DesignerOptions, ThemeConfig, TreatinkEvent } from '../types.js';
 
 /**
  * Designer lifecycle (P2-T01): open/close, SINGLE-instance guard, designer:open/close events.
  * This module is the lazy "designer chunk" — the loader pulls it on first open() (docs/06 §2).
- * Controls/engine wiring arrive with P2-T05…T11.
+ * Theming/copy resolution (P2-T04) happens here; controls/engine wiring arrive with P2-T05…T11.
  */
 
 export interface DesignerContext {
-  copy: { headerTitle?: string; closeLabel?: string };
+  copy: Partial<CopyStrings>;
+  theme: ThemeConfig;
   emit: (event: TreatinkEvent, payload: unknown) => void;
 }
 
@@ -34,14 +37,13 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
     return;
   }
 
+  const copy = resolveCopy(context.copy);
   const handles = mountModal(
     document,
-    {
-      headerTitle: context.copy.headerTitle ?? 'Personalize Your Product',
-      closeLabel: context.copy.closeLabel ?? 'Close',
-    },
+    { headerTitle: copy.headerTitle, closeLabel: copy.closeLabel },
     { onRequestClose: () => closeDesigner() },
   );
+  applyTheme(handles.overlay, resolveTheme(context.theme));
   active = { handles, options, context };
 
   handles.closeButton.addEventListener('click', () => closeDesigner());
