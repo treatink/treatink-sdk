@@ -49,6 +49,28 @@ export const STYLESHEET = `
   cursor: pointer;
   padding: 4px 8px;
 }
+.tk-canvas { display: block; width: 100%; height: auto; background: #f4f4f4; border-radius: 8px; }
+.tk-dropzone {
+  border: 2px dashed var(--tk-primary, #8ea0f6);
+  border-radius: 8px;
+  padding: 24px 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+.tk-dropzone-active { background: rgba(142, 160, 246, 0.12); }
+.tk-upload-button {
+  background: var(--tk-primary, #8ea0f6);
+  color: #1a1a1a;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 16px;
+  font-size: 15px;
+  cursor: pointer;
+}
+.tk-upload-error { color: #b3261e; margin-top: 8px; font-size: 14px; }
 .tk-visually-hidden {
   position: absolute;
   width: 1px;

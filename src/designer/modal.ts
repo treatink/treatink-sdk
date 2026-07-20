@@ -84,16 +84,14 @@ export function mountModal(
     if (event.key !== 'Tab') return;
     const focusables = [...overlay.querySelectorAll<HTMLElement>(FOCUSABLE)];
     if (focusables.length === 0) return;
-    const first = focusables[0]!;
-    const last = focusables[focusables.length - 1]!;
-    const current = doc.activeElement;
-    if (event.shiftKey && (current === first || !overlay.contains(current))) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && (current === last || !overlay.contains(current))) {
-      event.preventDefault();
-      first.focus();
-    }
+    // Fully programmatic cycle — engines disagree on native Tab (WebKit skips buttons), so the
+    // trap moves focus itself: deterministic order, focus can never escape the overlay.
+    event.preventDefault();
+    const index = focusables.indexOf(doc.activeElement as HTMLElement);
+    const next = event.shiftKey
+      ? focusables[(index <= 0 ? focusables.length : index) - 1]!
+      : focusables[(index + 1) % focusables.length]!;
+    next.focus();
   };
   overlay.addEventListener('keydown', onKeydown);
 
