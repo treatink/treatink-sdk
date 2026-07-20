@@ -7,9 +7,10 @@
  * Implemented by: P1-T09 (geometry/transform), P1-T10 (render/text/export).
  */
 export * from './types.js';
+export * from './geometry.js';
+export * from './transform.js';
 
-// Barrel for the engine's public functions (added by P1-T09/T10):
-//   computeInitialFit, clampPan, clampZoom  (geometry.ts, docs/05 §3–§5)
+// Added by P1-T10:
 //   renderComposite                          (render.ts,   docs/05 §6)
 //   placePersonalizationText                 (text.ts,     docs/05 §7)
 //   exportArtifacts                          (export.ts,   docs/05 §8)  → { print, display, source, lowRes }
