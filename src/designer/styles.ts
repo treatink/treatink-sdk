@@ -117,6 +117,15 @@ export const STYLESHEET = `
 }
 .tk-cutout-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
 .tk-cutout-thumb:focus-visible { border-color: var(--tk-accent, #ea8d00); }
+.tk-text { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+.tk-text-toggle { display: flex; align-items: center; gap: 8px; font-size: 15px; cursor: pointer; }
+.tk-text-checkbox { accent-color: var(--tk-primary, #8ea0f6); width: 18px; height: 18px; }
+.tk-text-input {
+  border: 1px solid #c9c9c9;
+  border-radius: 5px;
+  padding: 9px 12px;
+  font-size: 15px;
+}
 .tk-visually-hidden {
   position: absolute;
   width: 1px;

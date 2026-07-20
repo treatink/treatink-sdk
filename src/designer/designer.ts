@@ -16,6 +16,10 @@ import {
 import type { CanvasLike, EditorImage } from '../cutout-engine/index.js';
 import type { LoadedPhoto } from '../media/exif.js';
 import { mountCutouts } from './controls/cutouts.js';
+import { mountText } from './controls/text.js';
+import type { TextControl } from './controls/text.js';
+import { ensureLabelFont } from './font.js';
+import { PET_NAME_POSITIONS } from '../cutout-engine/index.js';
 import { TreatinkError } from '../types.js';
 import type {
   CopyStrings,
@@ -36,6 +40,8 @@ export interface DesignerContext {
   copy: Partial<CopyStrings>;
   theme: ThemeConfig;
   emit: (event: TreatinkEvent, payload: unknown) => void;
+  /** Fallback text cap when a template has no maxTextLength (docs/10 §5). */
+  maxPersonalizationLength: number;
   /** Templates (cutout-labels) for the open SKU — transport-backed (docs/01 §4). */
   listTemplates: (params: {
     sku: string;
@@ -54,17 +60,29 @@ interface ActiveDesigner {
   isDragging: boolean;
   zoom: ZoomControl | null;
   cutout: { template: Template; image: HTMLImageElement } | null;
+  text: { enabled: boolean; value: string };
+  textControl: TextControl | null;
+  fontReady: boolean;
 }
 
 let active: ActiveDesigner | null = null;
 
 /** Re-render the 900×1200 preview from current state (docs/05 §6). Cutout arrives in P2-T08. */
 function render(state: ActiveDesigner): void {
+  const value = state.text.value.trim();
+  const showText = state.text.enabled && value !== '' && state.fontReady;
   renderComposite(state.canvas as unknown as CanvasLike, {
     images: state.editor ? [state.editor] : [],
     resolveDrawable: () => state.photo?.image,
     cutout: state.cutout?.image, // the frame PNG on top — its alpha is the mask (docs/05 §6)
     isDragging: state.isDragging, // dims the cutout to 0.6 while dragging (canvasRenderer.js:40)
+    text: showText
+      ? {
+          text: value,
+          ...(state.cutout ? { framePosition: state.cutout.template.petNamePosition } : {}),
+          ...(state.cutout ? { theme: state.cutout.template.theme } : {}),
+        }
+      : null,
   });
   if (state.editor) {
     state.canvas.dataset['x'] = String(state.editor.x);
@@ -72,6 +90,9 @@ function render(state: ActiveDesigner): void {
     state.canvas.dataset['scale'] = String(state.editor.scale);
   }
   state.canvas.dataset['cutout'] = state.cutout?.template.cutoutLabelId ?? '';
+  state.canvas.dataset['textY'] = showText
+    ? String(PET_NAME_POSITIONS[state.cutout?.template.petNamePosition ?? 'default'])
+    : '';
 }
 
 /** Load the selected cutout's mask PNG, then re-render with it on top. */
@@ -80,6 +101,8 @@ async function selectCutout(state: ActiveDesigner, template: Template): Promise<
   image.src = template.maskUrl;
   await image.decode();
   state.cutout = { template, image };
+  // Text cap follows the template (fallback: config) — docs/10 §5.
+  state.textControl?.setMaxLength(template.maxTextLength ?? state.context.maxPersonalizationLength);
   render(state);
 }
 
@@ -172,6 +195,9 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
     isDragging: false,
     zoom: null,
     cutout: null,
+    text: { enabled: false, value: options.personalizationText ?? '' },
+    textControl: null,
+    fontReady: false,
   };
   active = state;
 
@@ -191,6 +217,34 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
     },
   });
   wireDrag(state);
+  state.textControl = mountText(
+    document,
+    handles.controls,
+    copy,
+    {
+      ...(options.personalizationText ? { value: options.personalizationText } : {}),
+      maxLength: context.maxPersonalizationLength,
+    },
+    {
+      onChange: (enabled, value) => {
+        state.text = { enabled, value };
+        if (enabled && !state.fontReady) {
+          // Mitr must be loaded BEFORE the fit loop measures (docs/05 §7) — lazy font chunk.
+          void ensureLabelFont(document)
+            .then(() => {
+              state.fontReady = true;
+              render(state);
+            })
+            .catch((cause: unknown) => {
+              surfaceError(
+                new TreatinkError('bad_request', 'The label font could not be loaded.', { cause }),
+              );
+            });
+        }
+        render(state);
+      },
+    },
+  );
   mountCutouts(
     document,
     handles.controls,

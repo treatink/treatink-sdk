@@ -94,6 +94,7 @@ export const Treatink = {
                   copy: resolved.copy,
                   theme: resolved.theme,
                   emit: (event, payload) => bus.emit(event, payload),
+                  maxPersonalizationLength: resolved.maxPersonalizationLength,
                   listTemplates: (params) =>
                     fixtureTransport
                       ? fixtureTransport.listTemplates(params)
