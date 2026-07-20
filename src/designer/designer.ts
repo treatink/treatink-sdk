@@ -7,6 +7,7 @@ import type { ModalHandles } from './modal.js';
 import { applyTheme, resolveTheme } from './theme.js';
 import {
   computeInitialFit,
+  computeLowRes,
   dragMove,
   dragStart,
   hitTest,
@@ -63,6 +64,9 @@ interface ActiveDesigner {
   text: { enabled: boolean; value: string };
   textControl: TextControl | null;
   fontReady: boolean;
+  lowRes: boolean;
+  lowResWarning: HTMLElement | null;
+  lowResCopy: string;
 }
 
 let active: ActiveDesigner | null = null;
@@ -93,6 +97,20 @@ function render(state: ActiveDesigner): void {
   state.canvas.dataset['textY'] = showText
     ? String(PET_NAME_POSITIONS[state.cutout?.template.petNamePosition ?? 'default'])
     : '';
+
+  // Low-res flag (Charter D.8, P2-T10): non-blocking warning, announced politely to AT.
+  const lowRes =
+    state.editor && state.photo
+      ? computeLowRes(state.editor, {
+          width: state.photo.naturalWidth,
+          height: state.photo.naturalHeight,
+        })
+      : false;
+  if (lowRes !== state.lowRes) {
+    state.lowRes = lowRes;
+    if (state.lowResWarning) state.lowResWarning.hidden = !lowRes;
+    state.handles.liveRegion.textContent = lowRes ? state.lowResCopy : '';
+  }
 }
 
 /** Load the selected cutout's mask PNG, then re-render with it on top. */
@@ -198,8 +216,19 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
     text: { enabled: false, value: options.personalizationText ?? '' },
     textControl: null,
     fontReady: false,
+    lowRes: false,
+    lowResWarning: null,
+    lowResCopy: copy.lowResWarning,
   };
   active = state;
+
+  // Low-res warning line under the preview (hidden until the flag trips).
+  const lowResWarning = document.createElement('p');
+  lowResWarning.className = 'tk-lowres';
+  lowResWarning.textContent = copy.lowResWarning;
+  lowResWarning.hidden = true;
+  handles.preview.appendChild(lowResWarning);
+  state.lowResWarning = lowResWarning;
 
   const surfaceError = (error: TreatinkError) => {
     options.onError?.(error);

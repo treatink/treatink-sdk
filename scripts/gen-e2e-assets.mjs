@@ -36,3 +36,15 @@ const app1 = Buffer.concat([
 const withExif = Buffer.concat([jpeg.subarray(0, 2), app1, jpeg.subarray(2)]);
 writeFileSync(join(OUT, 'exif-rotated.jpg'), withExif);
 console.log(`exif-rotated.jpg: encoded 800×600, orientation 6 → displays 600×800`);
+
+// midres: fine at scale 1 (900 ≤ 1.05·1000) but low-res at maxScale 1.3 (1170 > 1050) — the
+// P2-T10 zoom-transition case.
+const mid = createCanvas(1000, 1334);
+const midCtx = mid.getContext('2d');
+const grad = midCtx.createLinearGradient(0, 0, 1000, 1334);
+grad.addColorStop(0, '#1b7f4d');
+grad.addColorStop(1, '#e0c341');
+midCtx.fillStyle = grad;
+midCtx.fillRect(0, 0, 1000, 1334);
+writeFileSync(join(OUT, 'midres.png'), mid.toBuffer('image/png'));
+console.log('midres.png: 1000×1334');
