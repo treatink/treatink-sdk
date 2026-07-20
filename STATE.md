@@ -8,8 +8,8 @@ Start with the first **runnable** task (`docs/03` §3): `todo`, all `depends_on`
 gate passed, not blocked.
 
 - **Project:** `@treatink/sdk` MVP (native modal + publishable-key client, fixtures-first)
-- **Current phase:** P1 · Core (entry gate: blueprint present → ✅)
-- **Next runnable:** `P1-T01` (skeleton provided — `npm install` + make gates green)
+- **Current phase:** P2 · Designer (entry gate: P1 exit green → ✅)
+- **Next runnable:** `P2-T01` (Modal shell + lifecycle)
 - **RETRY_BUDGET:** 3 per task
 - **Scaffold:** repo skeleton laid down (pinned toolchain + `src/` architecture + typed stubs +
   test/fixtures structure). P1-T01/T03 are now *verify* tasks, not *create* tasks. Stubs throw
@@ -21,8 +21,8 @@ gate passed, not blocked.
 
 | Phase | Status | Entry gate | Exit gate |
 |---|---|---|---|
-| P1 Core | todo | blueprint present ✅ | `verify` + `test:golden` + `check:no-secret` green |
-| P2 Designer | todo | P1 exit green | `verify` + `test:e2e` + `test:a11y` + budgets |
+| P1 Core | **done** ✅ | blueprint present ✅ | exit gate green 2026-07-20 (130 tests) |
+| P2 Designer | todo | P1 exit green ✅ | `verify` + `test:e2e` + `test:a11y` + budgets |
 | P3 Save Path | todo | P2 exit green | full `test:e2e` happy path + persistence + no-secret |
 | P4 Live & Pilot | todo | P3 exit green | live smoke green **or** blockers parked; published |
 
@@ -31,18 +31,18 @@ gate passed, not blocked.
 ### P1 · Core
 | ID | Status | depends_on | Title |
 |---|---|---|---|
-| P1-T01 | todo | — | Toolchain & repo scaffold |
-| P1-T02 | todo | P1-T01 | Gate scripts & CI |
-| P1-T03 | todo | P1-T01 | Public types (the contract) |
-| P1-T04 | todo | P1-T03 | Config + key-prefix guard |
-| P1-T05 | todo | P1-T03 | Error model |
-| P1-T06 | todo | P1-T05 | Transport interface + FixtureTransport |
-| P1-T07 | todo | P1-T06 | Catalog fixtures + adapter |
-| P1-T08 | todo | P1-T06, P1-T07 | API namespaces (publishable, fixtures-backed) |
-| P1-T09 | todo | P1-T01 | Cutout engine — geometry & transform |
-| P1-T10 | todo | P1-T09 | Cutout engine — render, text, export |
-| P1-T11 | todo | P1-T10, P1-T02 | Golden-test harness + frozen goldens |
-| P1-T12 | todo | P1-T03 | Event bus (`tk.on`) |
+| P1-T01 | done | — | Toolchain & repo scaffold |
+| P1-T02 | done | P1-T01 | Gate scripts & CI |
+| P1-T03 | done | P1-T01 | Public types (the contract) |
+| P1-T04 | done | P1-T03 | Config + key-prefix guard |
+| P1-T05 | done | P1-T03 | Error model |
+| P1-T06 | done | P1-T05 | Transport interface + FixtureTransport |
+| P1-T07 | done | P1-T06 | Catalog fixtures + adapter |
+| P1-T08 | done | P1-T06, P1-T07 | API namespaces (publishable, fixtures-backed) |
+| P1-T09 | done | P1-T01 | Cutout engine — geometry & transform |
+| P1-T10 | done | P1-T09 | Cutout engine — render, text, export |
+| P1-T11 | done | P1-T10, P1-T02 | Golden-test harness + frozen goldens |
+| P1-T12 | done | P1-T03 | Event bus (`tk.on`) |
 
 ### P2 · Designer
 | ID | Status | depends_on | Title |
@@ -115,3 +115,16 @@ _Newest last. One line per completed task or phase transition:_
 `<TASK_ID> done — <gate summary> — <commit>` / `Phase Pn complete — exit gate green`.
 
 - (blueprint authored — planning complete; build not started)
+- P1-T01 done — typecheck+lint+build green — ba30226
+- P1-T02 done — verify+size+check:no-secret green — 5ca28bb
+- P1-T03 done — typecheck green; surface == docs/10 — 01e6d5d
+- P1-T04 done — npm test -- config green (15 tests) — b165747
+- P1-T05 done — npm test -- errors green (6 tests) — 4a3ae03
+- P1-T06 done — npm test -- transport green (21 tests) — 01917a8
+- P1-T07 done — npm test -- catalog green (10 tests); verify green — 07661ec
+- P1-T08 done — npm test -- api green (8 tests); verify green — 9ba9d67
+- P1-T12 done — npm test -- events green (7 tests); verify green — 4c189ae
+- P1-T09 done — npm test -- cutout-engine/geometry green (16 tests) — eb9c192
+- P1-T10 done — npm test -- cutout-engine && lint green (31 tests) — 2df95f6
+- P1-T11 done — npm run test:golden green (38 tests; 0% pixel diff vs store baselines) — 01e0810
+- Phase P1 complete — exit gate green (verify + test:golden + check:no-secret; 130 tests)
