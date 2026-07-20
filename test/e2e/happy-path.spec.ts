@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { submitOrder } from '../../server/index.js';
-import type { DesignerResult, OrderPayload, Treatink } from '../../src/types.js';
+import type { DesignerResult, Treatink } from '../../src/types.js';
 
 /**
  * P3-T07 — the Charter §14 Definition-of-Done demo, fixtures mode, one flow:
@@ -102,29 +102,33 @@ test('the full happy path (Charter §14)', async ({ page }) => {
   // 8 · server submitOrder — partner-server side (Node), mocked endpoint, idempotent
   const originalFetch = globalThis.fetch;
   const seen: Record<string, unknown> = {};
-  globalThis.fetch = (async (url: unknown, init?: RequestInit) => {
-    const body = JSON.parse(String(init?.body)) as { external_order_id: string };
-    seen['url'] = String(url);
+  const fetchStub = (input: unknown, init?: RequestInit): Promise<Response> => {
+    const raw = typeof init?.body === 'string' ? init.body : '{}';
+    const body = JSON.parse(raw) as { external_order_id: string };
+    seen['url'] = String(input);
     seen['idempotencyKey'] = (init?.headers as Record<string, string>)['Idempotency-Key'];
-    return new Response(
-      JSON.stringify({
-        id: 'ord_fx_00000001',
-        order_number: '1001',
-        status: 'received',
-        external_order_id: body.external_order_id,
-      }),
-      { status: 201 },
+    return Promise.resolve(
+      new Response(
+        JSON.stringify({
+          id: 'ord_fx_00000001',
+          order_number: '1001',
+          status: 'received',
+          external_order_id: body.external_order_id,
+        }),
+        { status: 201 },
+      ),
     );
-  }) as typeof fetch;
+  };
+  globalThis.fetch = fetchStub;
   try {
-    const order = await submitOrder(payload as OrderPayload, {
+    const order = await submitOrder(payload, {
       secretKey: 'sk_test_server',
       channel: 'rileyspets.com',
     });
     expect(order.status).toBe('received');
     expect(order.externalOrderId).toBe('partner-1001');
     expect(seen['idempotencyKey']).toBe('partner-1001');
-    const again = await submitOrder(payload as OrderPayload, {
+    const again = await submitOrder(payload, {
       secretKey: 'sk_test_server',
       channel: 'rileyspets.com',
     });
