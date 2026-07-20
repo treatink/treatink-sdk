@@ -1,4 +1,10 @@
-import type { Asset, AssetRole, Page, PageParams, Product, Template } from '../types.js';
+import type { Asset, AssetRole, Page, Product, Template } from '../types.js';
+
+/** Internal pagination params (public surface inlines these per docs/10 §3). */
+export interface PageParams {
+  limit?: number;
+  cursor?: string;
+}
 
 /**
  * The single seam between the SDK and any backend (docs/01 §4). Two implementations:

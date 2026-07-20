@@ -21,6 +21,7 @@ interface TreatinkConfig {
   apiBaseUrl?: string;            // override for staging; default https://api.treatink.com
   theme?: ThemeConfig;
   copy?: Partial<CopyStrings>;
+  maxPersonalizationLength?: number;  // text-cap fallback when a template has no maxTextLength (§5; default 20)
   debug?: boolean;
 }
 ```

@@ -42,12 +42,12 @@ export type TreatinkEvent = 'designer:open' | 'designer:close' | 'draft:saved' |
 /* ── Namespaces ───────────────────────────────────────────────────────────── */
 
 export interface ProductsApi {
-  list(params?: PageParams): Promise<Page<Product>>;
+  list(params?: { limit?: number; cursor?: string }): Promise<Page<Product>>;
   get(sku: string): Promise<Product>;
 }
 
 export interface TemplatesApi {
-  list(params: { sku: string } & PageParams): Promise<Page<Template>>;
+  list(params: { sku: string; limit?: number; cursor?: string }): Promise<Page<Template>>;
 }
 
 export interface ArtworkApi {
@@ -171,10 +171,6 @@ export interface Page<T> {
   data: T[];
   hasMore: boolean;
   nextCursor: string | null;
-}
-export interface PageParams {
-  limit?: number;
-  cursor?: string;
 }
 
 /** Precomputed alpha geometry (docs/08 §5). Consumed as-is; never decoded at runtime. */
