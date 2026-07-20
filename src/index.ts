@@ -8,6 +8,7 @@ import { createArtworkApi } from './api/artwork.js';
 import { createProductsApi } from './api/products.js';
 import { createTemplatesApi } from './api/templates.js';
 import { resolveConfig } from './config.js';
+import { DraftsStore } from './drafts/store.js';
 import { createEventBus, instrumentNamespace } from './events.js';
 import { FixtureTransport, type FixtureOp } from './transport/fixture-transport.js';
 import { TreatinkError } from './types.js';
@@ -62,6 +63,8 @@ export const Treatink = {
     // Every TreatinkError surfacing from a public namespace also fires 'error' (docs/10 §2).
     const onError = (error: TreatinkError) => bus.emit('error', error);
     const guard = <T extends object>(api: T): T => instrumentNamespace(api, onError);
+    // Reference-only drafts (docs/10 §6); falls back to in-memory outside the browser.
+    const draftsStore = new DraftsStore({ channel: resolved.channel });
     // Namespaces are wired by their tasks (api P1-T08, events P1-T12,
     // designer P2, drafts P3); until then each stub throws not_implemented on use.
     const tk: TreatinkInstance = {
@@ -113,6 +116,32 @@ export const Treatink = {
                       : Promise.reject(
                           new TreatinkError('bad_request', 'live uploads arrive with P4-T01'),
                         ),
+                  // Written ONLY after a successful save; emits draft:saved (docs/10 §2).
+                  saveDraft: (result) => {
+                    const now = new Date().toISOString();
+                    draftsStore.put({
+                      draftId: result.draftId,
+                      createdAt: now,
+                      updatedAt: now,
+                      channel: resolved.channel,
+                      product: {
+                        sku: result.sku,
+                        ...(result.variantId ? { variantId: result.variantId } : {}),
+                      },
+                      cutout: {
+                        cutoutLabelId: result.cutoutLabelId,
+                        ...(result.petNamePosition
+                          ? { petNamePosition: result.petNamePosition }
+                          : {}),
+                      },
+                      personalizationText: result.personalizationText ?? null,
+                      transform: result.transform,
+                      labelZone: result.labelZone,
+                      artwork: result.artwork,
+                      status: 'completed',
+                    });
+                    bus.emit('draft:saved', { draftId: result.draftId, sku: result.sku });
+                  },
                 },
                 options,
               ),
@@ -130,12 +159,12 @@ export const Treatink = {
           void import('./designer/designer.js').then((m) => m.closeDesigner());
         },
       },
-      drafts: {
-        list: () => notImplemented('drafts.list (P3-T03)'),
-        get: () => notImplemented('drafts.get (P3-T03)'),
-        delete: () => notImplemented('drafts.delete (P3-T03)'),
-        clear: () => notImplemented('drafts.clear (P3-T03)'),
-      },
+      drafts: guard({
+        list: () => draftsStore.list(),
+        get: (draftId: string) => draftsStore.get(draftId),
+        delete: (draftId: string) => draftsStore.delete(draftId),
+        clear: () => draftsStore.clear(),
+      }),
       orders: { buildPayload: () => notImplemented('orders.buildPayload (P3-T05)') },
       on: (event, handler) => bus.on(event, handler),
       ...(fixtureTransport

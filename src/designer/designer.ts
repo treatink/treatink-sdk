@@ -30,6 +30,7 @@ import type {
   AssetRole,
   CopyStrings,
   DesignerOptions,
+  DesignerResult,
   Page as PageOf,
   Product,
   Template,
@@ -59,6 +60,8 @@ export interface DesignerContext {
   getProduct: (sku: string) => Promise<Product>;
   /** The two-step asset upload (docs/08 §6) — backs the save pipeline (P3-T01). */
   uploadArtwork: (input: { role: AssetRole; file: Blob }) => Promise<Asset>;
+  /** Persist the reference DraftRecord + emit draft:saved — only after a successful save (P3-T03). */
+  saveDraft: (result: DesignerResult) => void;
 }
 
 interface ActiveDesigner {
@@ -163,8 +166,8 @@ async function save(state: ActiveDesigner): Promise<void> {
     upload: state.context.uploadArtwork,
   });
 
+  state.context.saveDraft(result); // reference record + draft:saved event (P3-T03)
   options.onComplete?.(result);
-  // NB: no 'draft:saved' here — the drafts store (P3-T03) emits it when the record persists.
   closeDesigner();
 }
 
