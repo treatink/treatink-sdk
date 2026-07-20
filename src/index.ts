@@ -8,6 +8,7 @@ import { createArtworkApi } from './api/artwork.js';
 import { createProductsApi } from './api/products.js';
 import { createTemplatesApi } from './api/templates.js';
 import { resolveConfig } from './config.js';
+import { createEventBus, instrumentNamespace } from './events.js';
 import { FixtureTransport, type FixtureOp } from './transport/fixture-transport.js';
 import { TreatinkError } from './types.js';
 import type { Treatink as TreatinkInstance, TreatinkConfig } from './types.js';
@@ -57,22 +58,32 @@ export const Treatink = {
     const resolved = resolveConfig(config);
     // The one backend seam (docs/01 §4). HttpTransport arrives in P4-T01.
     const fixtureTransport = resolved.mode === 'fixtures' ? new FixtureTransport() : null;
+    const bus = createEventBus();
+    // Every TreatinkError surfacing from a public namespace also fires 'error' (docs/10 §2).
+    const onError = (error: TreatinkError) => bus.emit('error', error);
+    const guard = <T extends object>(api: T): T => instrumentNamespace(api, onError);
     // Namespaces are wired by their tasks (api P1-T08, events P1-T12,
     // designer P2, drafts P3); until then each stub throws not_implemented on use.
     const tk: TreatinkInstance = {
       // Live-mode transport is HttpTransport (P4-T01); until then live namespaces stay stubs.
-      products: fixtureTransport
-        ? createProductsApi(fixtureTransport)
-        : {
-            list: () => notImplemented('products.list (live: P4-T01)'),
-            get: () => notImplemented('products.get (live: P4-T01)'),
-          },
-      templates: fixtureTransport
-        ? createTemplatesApi(fixtureTransport)
-        : { list: () => notImplemented('templates.list (live: P4-T01)') },
-      artwork: fixtureTransport
-        ? createArtworkApi(fixtureTransport)
-        : { upload: () => notImplemented('artwork.upload (live: P4-T01)') },
+      products: guard(
+        fixtureTransport
+          ? createProductsApi(fixtureTransport)
+          : {
+              list: () => notImplemented('products.list (live: P4-T01)'),
+              get: () => notImplemented('products.get (live: P4-T01)'),
+            },
+      ),
+      templates: guard(
+        fixtureTransport
+          ? createTemplatesApi(fixtureTransport)
+          : { list: () => notImplemented('templates.list (live: P4-T01)') },
+      ),
+      artwork: guard(
+        fixtureTransport
+          ? createArtworkApi(fixtureTransport)
+          : { upload: () => notImplemented('artwork.upload (live: P4-T01)') },
+      ),
       designer: {
         open: () => notImplemented('designer.open (P2-T01)'),
         close: () => notImplemented('designer.close (P2-T01)'),
@@ -84,7 +95,7 @@ export const Treatink = {
         clear: () => notImplemented('drafts.clear (P3-T03)'),
       },
       orders: { buildPayload: () => notImplemented('orders.buildPayload (P3-T05)') },
-      on: () => notImplemented('on (P1-T12)'),
+      on: (event, handler) => bus.on(event, handler),
       ...(fixtureTransport
         ? {
             fixtures: {
