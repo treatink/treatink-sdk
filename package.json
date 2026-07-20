@@ -33,6 +33,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:golden": "vitest run test/golden",
+    "harness": "npm run build && node scripts/harness.mjs",
     "test:e2e": "playwright test --pass-with-no-tests",
     "test:a11y": "playwright test test/a11y --pass-with-no-tests",
     "size": "node scripts/size.mjs",

@@ -84,9 +84,28 @@ export const Treatink = {
           ? createArtworkApi(fixtureTransport)
           : { upload: () => notImplemented('artwork.upload (live: P4-T01)') },
       ),
+      // The designer is a LAZY chunk — pulled on first open() to keep the loader tiny (docs/06 §2).
       designer: {
-        open: () => notImplemented('designer.open (P2-T01)'),
-        close: () => notImplemented('designer.close (P2-T01)'),
+        open: (options) => {
+          void import('./designer/designer.js')
+            .then((m) =>
+              m.openDesigner(
+                { copy: resolved.copy, emit: (event, payload) => bus.emit(event, payload) },
+                options,
+              ),
+            )
+            .catch((error: unknown) => {
+              const wrapped =
+                error instanceof TreatinkError
+                  ? error
+                  : new TreatinkError('bad_request', 'designer failed to load', { cause: error });
+              options.onError?.(wrapped);
+              bus.emit('error', wrapped);
+            });
+        },
+        close: () => {
+          void import('./designer/designer.js').then((m) => m.closeDesigner());
+        },
       },
       drafts: {
         list: () => notImplemented('drafts.list (P3-T03)'),

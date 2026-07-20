@@ -12,12 +12,12 @@ export default defineConfig({
   reporter: process.env.CI ? 'line' : 'list', // CI is Bitbucket Pipelines — no GitHub annotations
 
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost:5199',
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'npm run harness', // serves test/e2e/harness (added in P2)
-    url: 'http://localhost:5173',
+    command: 'npm run harness', // serves test/e2e/harness on 5199 (5173 clashes with vite defaults)
+    url: 'http://localhost:5199',
     reuseExistingServer: !process.env.CI,
   },
   projects: [

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Treatink SDK e2e harness</title>
+  </head>
+  <body>
+    <h1>Treatink SDK e2e harness</h1>
+    <p>Host page standing in for a partner storefront. Fixtures mode only.</p>
+    <button id="open-designer" type="button">Open designer</button>
+    <script type="module">
+      import { Treatink } from '/dist/index.js';
+      window.__events = [];
+      const tk = Treatink.init({ apiKey: 'pk_test_harness', channel: 'rileyspets.com' });
+      for (const event of ['designer:open', 'designer:close', 'draft:saved', 'error']) {
+        tk.on(event, (payload) => window.__events.push({ event, payload }));
+      }
+      window.tk = tk;
+      document.getElementById('open-designer').addEventListener('click', () => {
+        tk.designer.open({ sku: 'SSGTTBC' });
+      });
+    </script>
+  </body>
+</html>
