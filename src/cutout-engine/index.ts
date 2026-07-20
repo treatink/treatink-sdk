@@ -9,8 +9,6 @@
 export * from './types.js';
 export * from './geometry.js';
 export * from './transform.js';
-
-// Added by P1-T10:
-//   renderComposite                          (render.ts,   docs/05 §6)
-//   placePersonalizationText                 (text.ts,     docs/05 §7)
-//   exportArtifacts                          (export.ts,   docs/05 §8)  → { print, display, source, lowRes }
+export * from './render.js';
+export * from './text.js';
+export * from './export.js';
