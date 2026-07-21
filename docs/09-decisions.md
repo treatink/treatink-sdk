@@ -23,6 +23,20 @@ Consequence: the SDK's public surface = `products`, `templates`, `artwork` (asse
 `designer`, `drafts`, `orders.buildPayload`, `on`, `TreatinkError` — **no `sessions`**. `docs/04`,
 `types.ts`, and Phase 3 follow this.
 
+## Owner decisions — visual parity (settled 2026-07-21, Phase 5)
+
+The designer's default look = the **store customizer as rendered by `PetCustomizer.jsx` (API
+mode)**, extracted verbatim into `docs/13-visual-parity.md`. This supersedes the Charter §7.3
+palette wherever the two differ.
+
+| ID | Decision | Rationale | Status |
+|---|---|---|---|
+| VP-01 | **Default theme = the real store palette** (`#a99cdf` purple family, `#ffa518` orange family, 20/15/10px radii), not Charter §7.3 (`#8EA0F6`/`#EA8D00`/15px). ThemeConfig gains additive tokens (`primaryStrong`, `panelBackground`, `accentHover`, `surfaceAlt`, `buttonRadius`, `controlRadius`); explicit wins, else derived from base. | "Exact same as the original" is the owner requirement; the Charter idealized the palette. | **CONFIRMED** |
+| VP-02 | **Rotation UI ships in MVP** (rotate ±15° buttons, store semantics) — owner veto of the earlier "MVP keeps rotation at 0" note (`docs/05` §1). Engine math was already ported; transform/draft/payload already carry `rotation`. | Store parity; near-zero engine cost. | **CONFIRMED** |
+| VP-03 | **Zoom is slider-only** with the px-dimensions tooltip; the SDK's −/+ buttons are removed (store desktop has none). Keyboard zoom = native range arrows. | Store parity; a11y preserved. | **CONFIRMED** |
+| VP-04 | **SDK modal header stays** (Charter §7.1 chrome, `#F26B1D` default). The store card renders beneath it; in the iframe era that chrome came from the host modal. | The SDK owns its modal chrome. | **CONFIRMED** |
+| VP-05 | **No pet-type selection** (Charter §2/§12 deferral reaffirmed) — the "Choose Your Pet" card and its shake/not-selected affordance are not ported. | Charter scope. | **CONFIRMED** |
+
 ## Toolchain (GP-11 — pinned)
 
 | Concern | Choice | Why |

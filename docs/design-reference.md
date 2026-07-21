@@ -39,18 +39,24 @@ modal** driven by `Treatink.init()` + `tk.designer.open()`. Same UI, same math, 
 Phase-2 "Riley's parity" = reproduce `PetCustomizer` (desktop + mobile) as this native modal, with
 the store's feature set and the engine math from `docs/05`.
 
-## 3. Default theme (extracted from the store; GP-17)
+## 3. Default theme — SUPERSEDED by `docs/13-visual-parity.md` §1 (VP-01, 2026-07-21)
 
-Use the Charter §7.3 defaults, which match the store's palette family (the store spinner uses
-`#EA8000` orange + `#e2e6ff` light periwinkle — same family):
+> **⚠️ CORRECTION.** This table originally carried the Charter §7.3 palette (`#8EA0F6`/`#EA8D00`),
+> which does **not** match the real site. Owner decision VP-01 (`docs/09`): defaults are the exact
+> store palette, extracted from `../treatink/web/src/index.css:48-67`. The authoritative token
+> table (including derived shades, radii trio, and the ThemeConfig additions) is
+> **`docs/13-visual-parity.md` §1**.
 
 | Token | Default | Source |
 |---|---|---|
-| `--tk-primary` | `#8EA0F6` (periwinkle) | Charter §7.3 / store secondary `#e2e6ff` |
-| `--tk-accent` | `#EA8D00` (orange) | Charter §7.3 / store `#EA8000` |
-| `--tk-header-background` | `#F26B1D` | Charter §7.3 (Riley's channel override) |
-| `--tk-border-radius` | `15px` (cards) / `5px` (controls) | store customizer SCSS |
-| `--tk-font-family` | Montserrat (UI), Mitr (on-label text) with system fallback | store + Charter §7.3 |
+| `--tk-primary` | `#a99cdf` (store `--purple`) | `index.css:59` |
+| `--tk-primary-strong` | `#8c7ec2` (store `--purple-darker`) | `index.css:60` |
+| `--tk-panel` | `#e2e6ff` (store `--purple-light`) | `index.css:61` |
+| `--tk-accent` | `#ffa518` (store `--orange`) | `index.css:53` |
+| `--tk-accent-hover` | `#dd9133` (store `--orange-hover`) | `index.css:57` |
+| `--tk-header-background` | `#F26B1D` | Charter §7.3 (SDK modal chrome — VP-04) |
+| radii | `20px` cards / `15px` buttons / `10px` controls | store SCSS + `Button.scss` |
+| `--tk-font-family` | Montserrat (UI), Mitr (headings + on-label text), system fallback | store `index.css` |
 
 Partners override these via `theme` (init) and host CSS on `tk-` classes (`docs/02` §3). No external
 Riley's-specific asset is required — Riley's just overrides `headerBackground` to its orange.
