@@ -359,13 +359,6 @@ export const STYLESHEET = `
   scrollbar-width: none;
 }
 .tk-cutout-row::-webkit-scrollbar { display: none; }
-.tk-cutout-grid {
-  flex-wrap: wrap;
-  overflow-x: visible;
-  max-height: 40vh;
-  overflow-y: auto;
-  scroll-snap-type: none;
-}
 /* Layered thumb: grey backdrop + photo (z0) behind the frame PNG (z1) — store .bg-buttons. */
 .tk-cutout-thumb {
   position: relative;
@@ -426,6 +419,118 @@ export const STYLESHEET = `
   font-size: 15px;
   cursor: pointer;
 }
+
+/* ── Browse-All modal: store ModalWrapper + FramesModal (docs/13 §6). ── */
+.tk-frames-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tk-frames-overlay[hidden] { display: none; }
+.tk-frames-modal {
+  position: relative;
+  width: calc(100% - 40px);
+  max-height: calc(100% - 40px);
+  border-radius: 12px;
+  background: var(--tk-surface-alt, #F6F6FC);
+  box-shadow: -2px 0px 10px rgba(0, 0, 0, 0.2);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+/* Floating circular close (store .modal-close-btn). */
+.tk-frames-close {
+  position: absolute;
+  top: -10px;
+  right: -15px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: var(--tk-surface-alt, #F6F6FC);
+  color: var(--tk-primary, #a99cdf);
+  box-shadow: -2px 0px 10px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+  transition: 0.2s ease;
+}
+.tk-frames-close:hover { background: var(--tk-primary, #a99cdf); color: #ffffff; }
+/* Store h4 = Mitr semibold. */
+.tk-frames-title {
+  font-family: 'Mitr', var(--tk-font-family, 'Montserrat', system-ui, sans-serif);
+  font-weight: 600;
+  font-size: 24px;
+}
+/* Pill search field (store SearchField.scss). */
+.tk-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 384px;
+}
+.tk-search-input {
+  height: 48px;
+  width: 100%;
+  padding: 0 20px;
+  background: #ffffff;
+  border: 2px solid var(--tk-primary, #a99cdf);
+  border-radius: 100px;
+  outline: none;
+  transition: 0.2s;
+  font-size: 16px;
+  font-family: inherit;
+}
+.tk-search-input::-webkit-search-cancel-button { display: none; -webkit-appearance: none; }
+.tk-search-clear {
+  position: absolute;
+  left: 20px;
+  background: none;
+  border: none;
+  padding: 0;
+  color: #000000;
+  cursor: pointer;
+  display: flex;
+  z-index: 1;
+}
+.tk-search-clear:not([hidden]) + .tk-search-input { padding-left: 50px; }
+.tk-search-icon {
+  position: absolute;
+  right: 20px;
+  color: #000000;
+  display: flex;
+  pointer-events: none;
+}
+/* Modal chips are the 14px variant (FramesModal.scss). */
+.tk-chip-lg { font-size: 14px; padding: 4px 12px; }
+/* Scrollable centered grid; store thumb widths 270/200/150. */
+.tk-frames-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+.tk-frames-grid .tk-cutout-thumb { flex: 0 0 270px; }
+@media (max-width: 1000px) {
+  .tk-frames-grid .tk-cutout-thumb { flex-basis: 200px; }
+}
+@media (max-width: 800px) {
+  .tk-frames-grid .tk-cutout-thumb { flex-basis: 150px; }
+}
+.tk-frames-empty { color: #6b7280; text-align: center; margin: 40px 0; }
 
 /* Personalization text: store pet-name card (docs/13 §5.2) — centered column, native 16px
  * checkbox (no accent override — store ships the UA default), borderless white pill input. */

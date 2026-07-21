@@ -82,7 +82,11 @@ export function mountModal(
       return;
     }
     if (event.key !== 'Tab') return;
-    const focusables = [...overlay.querySelectorAll<HTMLElement>(FOCUSABLE)];
+    // Visible focusables only — elements inside [hidden] containers (e.g. the closed Browse-All
+    // modal, P5-T08) must not join the cycle. offsetParent is null for display:none subtrees.
+    const focusables = [...overlay.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
+      (el) => el.offsetParent !== null,
+    );
     if (focusables.length === 0) return;
     // Fully programmatic cycle — engines disagree on native Tab (WebKit skips buttons), so the
     // trap moves focus itself: deterministic order, focus can never escape the overlay.

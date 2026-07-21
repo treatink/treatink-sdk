@@ -6,7 +6,7 @@ import type { Treatink } from '../../src/types.js';
 
 const labels = JSON.parse(
   readFileSync(new URL('../../fixtures/catalog/cutout-labels.json', import.meta.url), 'utf8'),
-) as Array<{ id: string; category: string }>;
+) as Array<{ id: string; category: string; title: string }>;
 
 // P2-T08 (+P5-T07): store frame-select card (docs/13 §5.3) — collapsible header, metadata-driven
 // chips (no Browse-All chip), 3-up pager with orange dots, layered photo-behind-frame thumbs,
@@ -103,9 +103,54 @@ test('switching category re-filters the thumbnail row', async ({ page }) => {
   await expect(page.locator('.tk-cutout-thumb')).toHaveCount(expected);
 });
 
-test('Browse All lists every template for the SKU', async ({ page }) => {
+test('Browse All opens the store modal listing every template for the SKU', async ({ page }) => {
   await page.click('.tk-browse-all');
-  await expect(page.locator('.tk-cutout-thumb')).toHaveCount(labels.length);
+  await expect(page.locator('.tk-frames-overlay')).toBeVisible();
+  await expect(page.locator('.tk-frames-title')).toHaveText('Browse All Backgrounds');
+  // 'All' chip active by default (store FramesModal) → the full set
+  await expect(page.locator('.tk-frames-chips .tk-chip[data-category="All"]')).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(page.locator('.tk-frames-grid .tk-cutout-thumb')).toHaveCount(labels.length);
+});
+
+test('modal search filters by title and clears; empty query shows all', async ({ page }) => {
+  await page.click('.tk-browse-all');
+  const needle = labels[3]!.title;
+  const matching = labels.filter((l) =>
+    l.title.toLowerCase().includes(needle.toLowerCase()),
+  ).length;
+  await page.fill('.tk-search-input', needle);
+  await expect(page.locator('.tk-frames-grid .tk-cutout-thumb')).toHaveCount(matching);
+  await page.click('.tk-search-clear');
+  await expect(page.locator('.tk-frames-grid .tk-cutout-thumb')).toHaveCount(labels.length);
+  // a nonsense query shows the empty message
+  await page.fill('.tk-search-input', 'zzz-no-such-frame');
+  await expect(page.locator('.tk-frames-empty')).toBeVisible();
+  await expect(page.locator('.tk-frames-empty')).toHaveText('No backgrounds found');
+});
+
+test('picking a frame in the modal selects it and closes; close/Escape layer correctly', async ({
+  page,
+}) => {
+  await page.click('.tk-browse-all');
+  const target = labels[4]!.id;
+  await page.click(`.tk-frames-grid .tk-cutout-thumb[data-cutout="${target}"]`);
+  await expect(page.locator('.tk-frames-overlay')).toBeHidden(); // store: pick closes the modal
+  await expect(page.locator('.tk-canvas')).toHaveAttribute('data-cutout', target);
+  // reopen → the floating close button closes it
+  await page.click('.tk-browse-all');
+  await expect(page.locator('.tk-frames-overlay')).toBeVisible();
+  await page.click('.tk-frames-close');
+  await expect(page.locator('.tk-frames-overlay')).toBeHidden();
+  // reopen → Escape closes the FRAMES modal, not the designer
+  await page.click('.tk-browse-all');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.tk-frames-overlay')).toBeHidden();
+  await expect(page.locator('.tk-modal')).toBeVisible(); // designer survived
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.tk-overlay')).toHaveCount(0); // second Escape closes the designer
 });
 
 test('switching cutouts re-renders the composite over the photo', async ({ page }) => {

@@ -3,13 +3,14 @@ import { TreatinkError } from '../../types.js';
 import type { CopyStrings, Page, Template } from '../../types.js';
 
 /**
- * Cutout browser (P2-T08 → P5-T07, docs/13 §5.3, PetCustomizer.jsx:499-587): collapsible card
- * ("Choose Your Background" + chevron), category chips from template metadata (never hard-coded),
- * a 3-up scroll-snap pager with the store's orange pagination dots (no Swiper dep — I-08), and
- * layered thumbs — grey backdrop + the shopper's photo BEHIND the frame PNG (the store's live
- * thumb preview). The default cutout auto-preselects on open, like the store (artistic-frame-18).
- * Collapsible + toggler are real buttons with aria-expanded (I-06/I-09). "Browse All" swaps the
- * row for the full grid (the store's modal lands in P5-T08).
+ * Cutout browser (P2-T08 → P5-T07/T08, docs/13 §5.3–§6, PetCustomizer.jsx:499-587 +
+ * FramesModal.jsx): collapsible card ("Choose Your Background" + chevron), category chips from
+ * template metadata (never hard-coded), a 3-up scroll-snap pager with the store's orange
+ * pagination dots (no Swiper dep — I-08), layered thumbs — grey backdrop + the shopper's photo
+ * BEHIND the frame PNG — and the store's Browse-All modal: nested overlay, pill search field
+ * (filters title AND tags — I-10; the store searched desc only), 'All' + category chips, thumb
+ * grid. The default cutout auto-preselects on open, like the store (artistic-frame-18).
+ * Collapsible + toggler are real buttons with aria-expanded (I-06/I-09).
  */
 
 export interface CutoutsHooks {
@@ -26,11 +27,21 @@ export interface CutoutsControl {
 }
 
 const PAGE_SIZE = 3; // store: slidesPerGroup={3}
+const MODAL_ALL = 'All'; // store framesModalCategories default
 
 export function mountCutouts(
   doc: Document,
   host: HTMLElement,
-  copy: Pick<CopyStrings, 'cutoutsLabel' | 'categoryAll' | 'genericError'>,
+  copy: Pick<
+    CopyStrings,
+    | 'cutoutsLabel'
+    | 'categoryAll'
+    | 'browseAllTitle'
+    | 'searchPlaceholder'
+    | 'noCutoutsFound'
+    | 'closeLabel'
+    | 'genericError'
+  >,
   input: {
     sku: string;
     preselectId?: string;
@@ -70,6 +81,8 @@ export function mountCutouts(
   pager.className = 'tk-pager';
   const row = doc.createElement('div');
   row.className = 'tk-cutout-row';
+  row.setAttribute('role', 'listbox');
+  row.setAttribute('aria-label', copy.cutoutsLabel);
   const dots = doc.createElement('div');
   dots.className = 'tk-dots';
   pager.append(row, dots);
@@ -80,7 +93,6 @@ export function mountCutouts(
   browseAll.type = 'button';
   browseAll.className = 'tk-browse-all';
   browseAll.textContent = copy.categoryAll;
-  browseAll.setAttribute('aria-pressed', 'false');
   browseWrap.appendChild(browseAll);
 
   inner.append(chips, pager, browseWrap);
@@ -106,6 +118,64 @@ export function mountCutouts(
   });
   toggle.addEventListener('click', () => setExpanded(!expanded));
 
+  // ── Browse-All modal shell (store ModalWrapper + FramesModal, docs/13 §6) ──
+  const framesOverlay = doc.createElement('div');
+  framesOverlay.className = 'tk-frames-overlay';
+  framesOverlay.hidden = true;
+
+  const framesModal = doc.createElement('div');
+  framesModal.className = 'tk-frames-modal';
+  framesModal.setAttribute('role', 'dialog');
+  framesModal.setAttribute('aria-modal', 'true');
+  framesModal.setAttribute('aria-label', copy.browseAllTitle);
+
+  const framesClose = doc.createElement('button');
+  framesClose.type = 'button';
+  framesClose.className = 'tk-frames-close';
+  framesClose.setAttribute('aria-label', copy.closeLabel);
+  framesClose.appendChild(createIcon(doc, 'x'));
+
+  const framesTitle = doc.createElement('div');
+  framesTitle.className = 'tk-frames-title';
+  framesTitle.textContent = copy.browseAllTitle;
+
+  const search = doc.createElement('div');
+  search.className = 'tk-search';
+  const searchInput = doc.createElement('input');
+  searchInput.type = 'search';
+  searchInput.className = 'tk-search-input';
+  searchInput.placeholder = copy.searchPlaceholder;
+  searchInput.setAttribute('aria-label', copy.searchPlaceholder);
+  const searchClear = doc.createElement('button');
+  searchClear.type = 'button';
+  searchClear.className = 'tk-search-clear';
+  searchClear.setAttribute('aria-label', copy.closeLabel);
+  searchClear.appendChild(createIcon(doc, 'x', 15));
+  searchClear.hidden = true;
+  const searchIcon = doc.createElement('span');
+  searchIcon.className = 'tk-search-icon';
+  searchIcon.appendChild(createIcon(doc, 'search'));
+  search.append(searchClear, searchInput, searchIcon);
+
+  const modalChips = doc.createElement('div');
+  modalChips.className = 'tk-chips tk-frames-chips';
+  modalChips.setAttribute('role', 'tablist');
+
+  const grid = doc.createElement('div');
+  grid.className = 'tk-frames-grid';
+  grid.setAttribute('role', 'listbox');
+  grid.setAttribute('aria-label', copy.browseAllTitle);
+
+  const emptyMessage = doc.createElement('p');
+  emptyMessage.className = 'tk-frames-empty';
+  emptyMessage.textContent = copy.noCutoutsFound;
+  emptyMessage.hidden = true;
+
+  framesModal.append(framesClose, framesTitle, search, modalChips, grid, emptyMessage);
+  framesOverlay.appendChild(framesModal);
+  // Portal to the SDK overlay so the nested modal covers the whole designer card.
+  (host.closest('.tk-overlay') ?? host).appendChild(framesOverlay);
+
   let photoUrl: string | null = null;
   let selectedId: string | null = null;
   let renderRow: () => void = () => undefined;
@@ -128,14 +198,46 @@ export function mountCutouts(
     // categories in first-appearance order, from metadata (not hard-coded)
     const categories = [...new Set(templates.map((t) => t.category))];
     let activeCategory: string = categories[0] ?? '';
-    let gridMode = false; // Browse All (interim inline grid — store modal in P5-T08)
+    let modalCategory: string = MODAL_ALL; // store: modal defaults to 'All'
+    let modalOpen = false;
+
+    const syncSelection = () => {
+      const thumbs = [...row.children, ...grid.children] as HTMLElement[];
+      for (const thumb of thumbs) {
+        thumb.setAttribute('aria-selected', String(thumb.dataset['cutout'] === selectedId));
+      }
+    };
 
     const select = (template: Template) => {
       selectedId = template.cutoutLabelId;
-      for (const thumb of row.querySelectorAll<HTMLElement>('.tk-cutout-thumb')) {
-        thumb.setAttribute('aria-selected', String(thumb.dataset['cutout'] === selectedId));
-      }
+      syncSelection();
       hooks.onSelect(template);
+    };
+
+    /** Layered thumb (docs/13 §5.3): grey backdrop + photo (z0) behind the frame PNG (z1). */
+    const buildThumb = (template: Template, onPick: (t: Template) => void): HTMLElement => {
+      const thumb = doc.createElement('button');
+      thumb.type = 'button';
+      thumb.className = 'tk-cutout-thumb';
+      thumb.setAttribute('role', 'option'); // aria-selected is valid on option (axe aria-allowed-attr)
+      thumb.dataset['cutout'] = template.cutoutLabelId;
+      thumb.setAttribute('aria-label', template.title);
+      thumb.setAttribute('aria-selected', String(template.cutoutLabelId === selectedId));
+      if (photoUrl) {
+        const photo = doc.createElement('img');
+        photo.className = 'tk-thumb-photo';
+        photo.src = photoUrl;
+        photo.alt = '';
+        thumb.appendChild(photo);
+      }
+      const img = doc.createElement('img');
+      img.className = 'tk-thumb-frame';
+      img.src = template.maskUrl;
+      img.alt = template.title;
+      img.loading = 'lazy';
+      thumb.appendChild(img);
+      thumb.addEventListener('click', () => onPick(template));
+      return thumb;
     };
 
     const renderChips = () => {
@@ -146,12 +248,10 @@ export function mountCutouts(
         chip.className = 'tk-chip';
         chip.dataset['category'] = category;
         chip.setAttribute('role', 'tab');
-        chip.setAttribute('aria-selected', String(category === activeCategory && !gridMode));
+        chip.setAttribute('aria-selected', String(category === activeCategory));
         chip.textContent = category; // displayed capitalized via CSS (wire is lowercase)
         chip.addEventListener('click', () => {
           activeCategory = category;
-          gridMode = false;
-          browseAll.setAttribute('aria-pressed', 'false');
           renderChips();
           renderRow();
           row.scrollTo({ left: 0 }); // store: swiper slideTo(0) on category switch
@@ -162,7 +262,6 @@ export function mountCutouts(
 
     const renderDots = (visibleCount: number) => {
       dots.textContent = '';
-      if (gridMode) return;
       const pages = Math.ceil(visibleCount / PAGE_SIZE);
       if (pages <= 1) return;
       for (let i = 0; i < pages; i++) {
@@ -186,40 +285,88 @@ export function mountCutouts(
 
     renderRow = () => {
       row.textContent = '';
-      row.className = gridMode ? 'tk-cutout-row tk-cutout-grid' : 'tk-cutout-row';
-      const visible = gridMode ? templates : templates.filter((t) => t.category === activeCategory);
-      for (const template of visible) {
-        const thumb = doc.createElement('button');
-        thumb.type = 'button';
-        thumb.className = 'tk-cutout-thumb';
-        thumb.dataset['cutout'] = template.cutoutLabelId;
-        thumb.setAttribute('aria-label', template.title);
-        thumb.setAttribute('aria-selected', String(template.cutoutLabelId === selectedId));
-        if (photoUrl) {
-          // the shopper's photo behind the frame — the store's live thumb preview
-          const photo = doc.createElement('img');
-          photo.className = 'tk-thumb-photo';
-          photo.src = photoUrl;
-          photo.alt = '';
-          thumb.appendChild(photo);
-        }
-        const img = doc.createElement('img');
-        img.className = 'tk-thumb-frame';
-        img.src = template.maskUrl;
-        img.alt = template.title;
-        img.loading = 'lazy';
-        thumb.appendChild(img);
-        thumb.addEventListener('click', () => select(template));
-        row.appendChild(thumb);
-      }
+      const visible = templates.filter((t) => t.category === activeCategory);
+      for (const template of visible) row.appendChild(buildThumb(template, select));
       renderDots(visible.length);
     };
 
-    browseAll.addEventListener('click', () => {
-      gridMode = !gridMode;
-      browseAll.setAttribute('aria-pressed', String(gridMode));
-      renderChips();
-      renderRow();
+    // ── Browse-All modal behavior (store FramesModal) ──
+    const renderModalChips = () => {
+      modalChips.textContent = '';
+      for (const category of [MODAL_ALL, ...categories]) {
+        const chip = doc.createElement('button');
+        chip.type = 'button';
+        chip.className = 'tk-chip tk-chip-lg';
+        chip.dataset['category'] = category;
+        chip.setAttribute('role', 'tab');
+        chip.setAttribute('aria-selected', String(category === modalCategory));
+        chip.textContent = category;
+        chip.addEventListener('click', () => {
+          modalCategory = category;
+          renderModalChips();
+          renderGrid();
+        });
+        modalChips.appendChild(chip);
+      }
+    };
+
+    const renderGrid = () => {
+      grid.textContent = '';
+      const query = searchInput.value.trim().toLowerCase();
+      const visible = templates
+        .filter((t) => modalCategory === MODAL_ALL || t.category === modalCategory)
+        .filter(
+          (t) =>
+            query === '' ||
+            t.title.toLowerCase().includes(query) ||
+            t.tags.some((tag) => tag.toLowerCase().includes(query)),
+        );
+      for (const template of visible) {
+        grid.appendChild(
+          buildThumb(template, (picked) => {
+            select(picked);
+            closeModal(); // store: picking a frame closes the modal
+          }),
+        );
+      }
+      emptyMessage.hidden = visible.length > 0;
+      searchClear.hidden = searchInput.value === '';
+    };
+
+    const openModal = () => {
+      modalOpen = true;
+      modalCategory = MODAL_ALL; // store: modal opens on 'All'
+      searchInput.value = ''; // …with a fresh query
+      framesOverlay.hidden = false;
+      renderModalChips();
+      renderGrid();
+      searchInput.focus();
+    };
+    const closeModal = () => {
+      if (!modalOpen) return;
+      modalOpen = false;
+      framesOverlay.hidden = true;
+      browseAll.focus(); // focus returns to the opener
+    };
+
+    browseAll.addEventListener('click', openModal);
+    framesClose.addEventListener('click', closeModal);
+    framesOverlay.addEventListener('click', (event) => {
+      if (event.target === framesOverlay) closeModal(); // backdrop click, store ModalWrapper
+    });
+    // Escape closes the frames modal FIRST — the designer's overlay handler must not see it.
+    framesOverlay.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        closeModal();
+      }
+    });
+    searchInput.addEventListener('input', renderGrid);
+    searchClear.addEventListener('click', () => {
+      searchInput.value = '';
+      renderGrid();
+      searchInput.focus();
     });
 
     renderChips();
