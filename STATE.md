@@ -9,7 +9,9 @@ gate passed, not blocked.
 
 - **Project:** `@treatink/sdk` MVP (native modal + publishable-key client, fixtures-first)
 - **Current phase:** P4 · Live & Pilot (entry gate: P3 exit green → ✅)
-- **Next runnable:** `P4-T01` (HttpTransport — catalog + orders, real documented paths)
+- **Next runnable:** `P4-T02` (live assets — likely parks on staging/storage-CORS); the next
+  clean machine-gated task is `P4-T06` (SRI+CSP+privacy, `test:e2e -- no-third-party`). P4-T03/T04
+  are expected blockers; P4-T05 is a human-verified docs checklist.
 - **RETRY_BUDGET:** 3 per task
 - **Scaffold:** repo skeleton laid down (pinned toolchain + `src/` architecture + typed stubs +
   test/fixtures structure). P1-T01/T03 are now *verify* tasks, not *create* tasks. Stubs throw
@@ -74,7 +76,7 @@ gate passed, not blocked.
 ### P4 · Live & Pilot
 | ID | Status | depends_on | Title | Note |
 |---|---|---|---|---|
-| P4-T01 | todo | P3 exit | HttpTransport (catalog + orders) | real documented paths |
+| P4-T01 | done | P3 exit | HttpTransport (catalog + orders) | real documented paths |
 | P4-T02 | todo | P4-T01 | Live assets upload (session/asset reconciliation) | **expected blocker** — API decision |
 | P4-T03 | todo | P4-T01 | Live templates | **expected blocker** — endpoint missing |
 | P4-T04 | todo | P4-T01 | CORS verification | **expected blocker** — API policy |
@@ -149,3 +151,4 @@ _Newest last. One line per completed task or phase transition:_
 - P3-T07 done — test:e2e happy-path green (3 browsers) — 99c2097 + aebeca0
 - P3-T08 done — test:e2e quickstart green (6 tests, 3 browsers; doc↔harness lockstep) — edbda4a
 - Phase P3 complete — exit gate green (verify + 189 e2e + check:no-secret; drafts references-only)
+- P4-T01 done — test:e2e http-catalog-orders green (12 tests, 3 browsers) + 7 unit; full e2e 201 green — d3b5837
