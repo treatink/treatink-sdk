@@ -112,13 +112,25 @@ export const STYLESHEET = `
   .tk-controls { gap: 20px; }
 }
 
-/* ── Preview canvas (interim — the dashed 3:4 wrapper moves in P5-T03). ── */
+/* ── Canvas area: the store's dashed 3:4 frame (docs/13 §4). The FRAME owns the border, the
+ *    drop surface, and the cursor; the canvas fills it borderless. ── */
+.tk-canvas-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border: 3px dashed var(--tk-primary, #a99cdf);
+  border-radius: var(--tk-border-radius, 20px);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.tk-canvas-frame.tk-dragging { cursor: grabbing; }
 .tk-canvas {
   display: block;
   width: 100%;
-  height: auto;
-  border: 3px dashed var(--tk-primary, #a99cdf);
-  border-radius: var(--tk-border-radius, 20px);
+  height: 100%;
   touch-action: none;
 }
 .tk-lowres {
@@ -129,22 +141,29 @@ export const STYLESHEET = `
   font-size: 14px;
 }
 
-/* ── Upload (interim card — replaced by the on-canvas overlay in P5-T03). ── */
-.tk-dropzone {
-  border: 2px dashed var(--tk-primary, #a99cdf);
-  border-radius: var(--tk-border-radius, 20px);
-  padding: 24px 16px;
-  text-align: center;
+/* ── Upload empty state: overlaid on the canvas, anchored above the frame bottom
+ *    (store .upload-container: bottom 25%, children max-width 220px). ── */
+.tk-upload-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 25%;
   display: flex;
   flex-direction: column;
-  gap: 12px;
   align-items: center;
-  background: var(--tk-panel, #e2e6ff);
+  justify-content: center;
+  text-align: center;
 }
-.tk-dropzone-active {
-  background: color-mix(in srgb, var(--tk-panel, #e2e6ff) 85%, var(--tk-primary, #a99cdf));
+.tk-upload-overlay[hidden] { display: none; } /* author display:flex must not defeat [hidden] */
+.tk-upload-overlay > * { max-width: 220px; }
+.tk-upload-icon { color: var(--tk-accent, #ffa518); }
+.tk-upload-prompt {
+  font-size: 16px;
+  line-height: 24px;
+  color: #000000;
+  margin-bottom: 20px;
+  white-space: pre-line;
 }
-.tk-upload-prompt { font-size: 16px; line-height: 24px; color: #000000; }
 .tk-upload-button {
   background: var(--tk-primary, #a99cdf);
   color: #ffffff;
@@ -157,6 +176,10 @@ export const STYLESHEET = `
   transition: 0.3s;
 }
 .tk-upload-error { color: #b3261e; margin-top: 8px; font-size: 14px; }
+@media (max-width: ${MOBILE_BREAKPOINT_PX - 1}px) {
+  .tk-upload-overlay { bottom: 35%; } /* store ≤700px override */
+  .tk-upload-button { padding: 10px 15px; } /* store default-btn mobile padding */
+}
 
 /* ── Control cards: store .customizer-controls (docs/13 §5). ── */
 .tk-zoom, .tk-text, .tk-cutouts {

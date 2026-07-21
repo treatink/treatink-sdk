@@ -1,5 +1,6 @@
 import { resolveCopy } from './copy.js';
 import { mountUpload } from './controls/upload.js';
+import type { UploadControl } from './controls/upload.js';
 import { mountZoom } from './controls/zoom.js';
 import type { ZoomControl } from './controls/zoom.js';
 import { mountModal } from './modal.js';
@@ -73,6 +74,9 @@ interface ActiveDesigner {
   options: DesignerOptions;
   context: DesignerContext;
   canvas: HTMLCanvasElement;
+  /** The dashed 3:4 wrapper — drop target + cursor surface (docs/13 §4). */
+  frame: HTMLElement;
+  upload: UploadControl | null;
   photo: LoadedPhoto | null;
   editor: EditorImage | null;
   isDragging: boolean;
@@ -249,6 +253,7 @@ function wireDrag(state: ActiveDesigner): void {
     canvas.setPointerCapture(event.pointerId);
     anchor = dragStart(state.editor, mouse.x, mouse.y);
     state.isDragging = true;
+    state.frame.classList.add('tk-dragging'); // store: cursor grabbing while dragging
   });
   canvas.addEventListener('pointermove', (event) => {
     if (!anchor || !state.editor) return;
@@ -263,6 +268,7 @@ function wireDrag(state: ActiveDesigner): void {
     if (!anchor) return;
     anchor = null;
     state.isDragging = false;
+    state.frame.classList.remove('tk-dragging');
     render(state);
   };
   canvas.addEventListener('pointerup', end);
@@ -272,6 +278,7 @@ function wireDrag(state: ActiveDesigner): void {
 function acceptPhoto(state: ActiveDesigner, photo: LoadedPhoto): void {
   if (state.photo) URL.revokeObjectURL(state.photo.objectUrl);
   state.photo = photo;
+  state.upload?.setVisible(false); // the empty-state overlay yields to the photo (docs/13 §4)
   const fit = computeInitialFit(photo.naturalWidth, photo.naturalHeight);
   if (state.restoredTransform) {
     // Draft re-open (P3-T04): fitted box + maxScale derive from the re-selected photo; the
@@ -322,20 +329,26 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
   );
   applyTheme(handles.overlay, resolveTheme(context.theme));
 
-  // Preview canvas — the fixed 900×1200 edit==print space (docs/05 §0), CSS-scaled to fit.
+  // The store's canvas area (docs/13 §4): dashed 3:4 frame owns the border, drop surface, and
+  // cursor; the fixed 900×1200 edit==print canvas (docs/05 §0) fills it, CSS-scaled.
+  const frame = document.createElement('div');
+  frame.className = 'tk-canvas-frame';
   const canvas = document.createElement('canvas');
   canvas.width = 900;
   canvas.height = 1200;
   canvas.className = 'tk-canvas';
   canvas.setAttribute('role', 'img');
   canvas.setAttribute('aria-label', copy.headerTitle);
-  handles.preview.appendChild(canvas);
+  frame.appendChild(canvas);
+  handles.preview.appendChild(frame);
 
   const state: ActiveDesigner = {
     handles,
     options,
     context,
     canvas,
+    frame,
+    upload: null,
     photo: null,
     editor: null,
     isDragging: false,
@@ -394,7 +407,8 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
       new TreatinkError('not_found', 'The requested draft no longer exists.', { param: 'draftId' }),
     );
   }
-  mountUpload(document, handles.controls, copy, {
+  // Upload = the on-canvas empty state; the frame is the drop target (docs/13 §4).
+  state.upload = mountUpload(document, frame, copy, {
     onPhoto: (photo) => acceptPhoto(state, photo),
     onError: surfaceError,
   });

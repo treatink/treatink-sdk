@@ -3,8 +3,9 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Treatink } from '../../src/types.js';
 
-// P2-T05: both input paths load a photo; rotated-EXIF photo displays upright; invalid file →
-// unsupported_file_type surfaced in the UI; oversize rejected before any "upload".
+// P2-T05 (+P5-T03): both input paths load a photo; the empty-state overlay sits ON the canvas
+// frame and yields once a photo is accepted (docs/13 §4); rotated-EXIF photo displays upright;
+// invalid file → unsupported_file_type surfaced in the UI; oversize rejected before any "upload".
 
 declare global {
   interface Window {
@@ -34,21 +35,25 @@ async function canvasHasPixels(page: Page): Promise<boolean> {
 test('picker path: selecting a photo renders it in the preview at the initial fit', async ({
   page,
 }) => {
+  // The empty state overlays the canvas frame (store upload-container, docs/13 §4).
+  await expect(page.locator('.tk-canvas-frame .tk-upload-overlay')).toBeVisible();
   await page.setInputFiles('.tk-file-input', join(ASSETS, 'portrait.png'));
   await expect(page.locator('.tk-canvas')).toHaveAttribute('data-natural-width', '1536');
   await expect(page.locator('.tk-canvas')).toHaveAttribute('data-natural-height', '2048');
   expect(await canvasHasPixels(page)).toBe(true);
+  // …and yields once the photo is accepted.
+  await expect(page.locator('.tk-upload-overlay')).toBeHidden();
 });
 
 test('drag-and-drop path loads the photo too', async ({ page }) => {
-  // build a DataTransfer in-page from the served asset and drop it on the dropzone
+  // build a DataTransfer in-page from the served asset and drop it on the canvas frame
   const dataTransfer = await page.evaluateHandle(async () => {
     const blob = await (await fetch('/assets/portrait.png')).blob();
     const dt = new DataTransfer();
     dt.items.add(new File([blob], 'portrait.png', { type: 'image/png' }));
     return dt;
   });
-  await page.dispatchEvent('.tk-dropzone', 'drop', { dataTransfer });
+  await page.dispatchEvent('.tk-canvas-frame', 'drop', { dataTransfer });
   await expect(page.locator('.tk-canvas')).toHaveAttribute('data-natural-width', '1536');
   expect(await canvasHasPixels(page)).toBe(true);
 });
