@@ -1,4 +1,6 @@
 import { resolveCopy } from './copy.js';
+import { mountImageControls } from './controls/image-controls.js';
+import type { ImageControlsControl } from './controls/image-controls.js';
 import { mountUpload } from './controls/upload.js';
 import type { UploadControl } from './controls/upload.js';
 import { mountZoom } from './controls/zoom.js';
@@ -77,6 +79,7 @@ interface ActiveDesigner {
   /** The dashed 3:4 wrapper — drop target + cursor surface (docs/13 §4). */
   frame: HTMLElement;
   upload: UploadControl | null;
+  imageControls: ImageControlsControl | null;
   photo: LoadedPhoto | null;
   editor: EditorImage | null;
   isDragging: boolean;
@@ -204,6 +207,7 @@ function render(state: ActiveDesigner): void {
     state.canvas.dataset['x'] = String(state.editor.x);
     state.canvas.dataset['y'] = String(state.editor.y);
     state.canvas.dataset['scale'] = String(state.editor.scale);
+    state.canvas.dataset['rotation'] = String(state.editor.rotation);
   }
   state.canvas.dataset['cutout'] = state.cutout?.template.cutoutLabelId ?? '';
   state.canvas.dataset['textY'] = showText
@@ -275,10 +279,29 @@ function wireDrag(state: ActiveDesigner): void {
   canvas.addEventListener('pointercancel', end);
 }
 
+/** Delete (store deleteImageHandler): back to the empty state; the design survives cutout-only. */
+function deletePhoto(state: ActiveDesigner): void {
+  if (!state.photo) return;
+  URL.revokeObjectURL(state.photo.objectUrl);
+  state.photo = null;
+  state.editor = null;
+  delete state.canvas.dataset['x'];
+  delete state.canvas.dataset['y'];
+  delete state.canvas.dataset['scale'];
+  delete state.canvas.dataset['rotation'];
+  delete state.canvas.dataset['naturalWidth'];
+  delete state.canvas.dataset['naturalHeight'];
+  state.zoom?.disable();
+  state.imageControls?.setVisible(false); // store: card exists only with a photo
+  state.upload?.setVisible(true); // the empty-state overlay returns
+  render(state);
+}
+
 function acceptPhoto(state: ActiveDesigner, photo: LoadedPhoto): void {
   if (state.photo) URL.revokeObjectURL(state.photo.objectUrl);
   state.photo = photo;
   state.upload?.setVisible(false); // the empty-state overlay yields to the photo (docs/13 §4)
+  state.imageControls?.setVisible(true);
   const fit = computeInitialFit(photo.naturalWidth, photo.naturalHeight);
   if (state.restoredTransform) {
     // Draft re-open (P3-T04): fitted box + maxScale derive from the re-selected photo; the
@@ -352,6 +375,7 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
     canvas,
     frame,
     upload: null,
+    imageControls: null,
     photo: null,
     editor: null,
     isDragging: false,
@@ -415,7 +439,16 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
     onPhoto: (photo) => acceptPhoto(state, photo),
     onError: surfaceError,
   });
-  state.zoom = mountZoom(document, handles.controls, copy, {
+  // Image-controls card (docs/13 §5.1): rotate ±15° + delete + the slider, hidden until a photo.
+  state.imageControls = mountImageControls(document, handles.controls, copy, {
+    onRotate: (degrees) => {
+      if (!state.editor) return;
+      state.editor.rotation += degrees; // additive, store customizerSlice.jsx:594-600 (VP-02)
+      render(state);
+    },
+    onDelete: () => deletePhoto(state),
+  });
+  state.zoom = mountZoom(document, state.imageControls.sliderHost, copy, {
     onScale: (scale) => {
       if (!state.editor) return;
       state.editor.scale = scale;

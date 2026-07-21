@@ -102,6 +102,45 @@ test('drag pans the photo freeform (no clamping)', async ({ page }) => {
   expect(await num(page, 'data-x')).toBeLessThan(-700);
 });
 
+test('rotate buttons accumulate ±15° and re-render the composite (VP-02)', async ({ page }) => {
+  // Card is visible with a photo (store: images.length > 0), buttons labeled (I-06).
+  await expect(page.locator('.tk-image-controls')).toBeVisible();
+  // (5,140) sits just under the unrotated top edge (y=132) — covered at rotation 0.
+  const alphaAt = () =>
+    page.evaluate(() => {
+      const canvas = document.querySelector<HTMLCanvasElement>('.tk-canvas')!;
+      return canvas.getContext('2d')!.getImageData(5, 140, 1, 1).data[3]!;
+    });
+  expect(await alphaAt()).toBeGreaterThan(0);
+  await page.click('.tk-rotate-right');
+  await expect(page.locator('.tk-canvas')).toHaveAttribute('data-rotation', '15');
+  await page.click('.tk-rotate-right');
+  await expect(page.locator('.tk-canvas')).toHaveAttribute('data-rotation', '30');
+  await page.click('.tk-rotate-left');
+  await page.click('.tk-rotate-left');
+  await page.click('.tk-rotate-left');
+  await expect(page.locator('.tk-canvas')).toHaveAttribute('data-rotation', '-15');
+  // at −15° the photo's top-left corner swings down to y≈269 — (5,140) is now outside the photo
+  expect(await alphaAt()).toBe(0);
+});
+
+test('delete returns to the empty state: overlay back, card hidden, slider disabled', async ({
+  page,
+}) => {
+  await expect(page.locator('.tk-image-controls')).toBeVisible();
+  await expect(page.locator('.tk-upload-overlay')).toBeHidden();
+  await page.click('.tk-delete-image');
+  await expect(page.locator('.tk-image-controls')).toBeHidden();
+  await expect(page.locator('.tk-upload-overlay')).toBeVisible();
+  await expect(page.locator('.tk-zoom-slider')).toBeDisabled();
+  await expect(page.locator('.tk-canvas')).not.toHaveAttribute('data-natural-width', /.+/);
+  // a fresh upload works after delete
+  const ASSETS = new URL('./harness/assets', import.meta.url).pathname;
+  await page.setInputFiles('.tk-file-input', join(ASSETS, 'portrait.png'));
+  await expect(page.locator('.tk-canvas')).toHaveAttribute('data-scale', '1');
+  await expect(page.locator('.tk-image-controls')).toBeVisible();
+});
+
 test('pointer down outside the photo box does not start a drag', async ({ page }) => {
   await page.locator('.tk-zoom-slider').fill('0.5'); // shrink so corners are empty
   const box = (await page.locator('.tk-canvas').boundingBox())!;

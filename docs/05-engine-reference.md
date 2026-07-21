@@ -30,10 +30,11 @@ the mask, at runtime, for free. The print composite is literally `canvas.toBlob(
 | `MAX_CANVAS_COVERAGE` | **1.3** (130%) | `hooks/useFileHandlers.js:26` |
 
 MVP scope note (Charter §2): the Charter narrows to **single photo** and **no rotation**. The store
-supports up to 3 photos and rotation. The **math for each still ports from here** — MVP simply
-exercises the single-photo, rotation-0 path. Keep the engine general enough that enabling
-multi-photo/rotation later is not a rewrite, but the designer UI in MVP exposes one photo, no rotate
-(see §9 and `phases/02-designer.md`).
+supports up to 3 photos and rotation. The **math for each still ports from here** — the engine is
+general. **Update (owner veto VP-02, 2026-07-21, `docs/09`):** rotation UI ships in MVP after all —
+the designer exposes the store's rotate-left/right buttons (±15° additive,
+`customizerSlice.jsx:594-600`); a `portrait-rotate-15` golden case (baseline from the store
+renderer) locks the parity. Single photo remains the MVP scope.
 
 ## 2. Coordinate space & the image object
 

@@ -20,6 +20,8 @@ export interface ZoomControl {
   slider: HTMLInputElement;
   /** Enable once a photo is loaded; maxScale + fitted box come from its initial fit. */
   enable(maxScale: number, scale: number, box: { width: number; height: number }): void;
+  /** Back to the pre-photo state (photo deleted). */
+  disable(): void;
   setValue(scale: number): void;
 }
 
@@ -84,6 +86,13 @@ export function mountZoom(
       slider.disabled = false;
       tooltip.hidden = false;
       sync(scale);
+    },
+    disable() {
+      box = null;
+      slider.disabled = true;
+      tooltip.hidden = true;
+      slider.value = String(MIN_SCALE);
+      sync(MIN_SCALE);
     },
     setValue(scale) {
       slider.value = String(scale);

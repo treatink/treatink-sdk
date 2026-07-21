@@ -182,7 +182,7 @@ export const STYLESHEET = `
 }
 
 /* ── Control cards: store .customizer-controls (docs/13 §5). ── */
-.tk-text, .tk-cutouts {
+.tk-image-controls, .tk-text, .tk-cutouts {
   background: var(--tk-panel, #e2e6ff);
   border-radius: var(--tk-border-radius, 20px);
   padding: 20px;
@@ -190,6 +190,38 @@ export const STYLESHEET = `
   flex-direction: column;
   gap: 12px;
 }
+.tk-card-label {
+  font-weight: 500;
+  color: #374151;
+  text-align: center;
+  user-select: none;
+}
+
+/* ── Image-controls card (docs/13 §5.1): label + rotate/delete on the left, slider right. ── */
+.tk-image-controls { flex-direction: row; align-items: center; gap: 8px; }
+.tk-image-controls[hidden] { display: none; }
+.tk-image-controls-left {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  flex: 0 0 auto;
+}
+.tk-icon-row { display: flex; }
+.tk-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 12px;
+  border-radius: 4px;
+  color: #000000;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.tk-icon-button:hover { background: #f3f4f6; }
+.tk-image-controls .tk-slider { flex: 1 1 auto; margin-top: 16px; }
 
 /* ── Zoom: slider-only, store .slider-input (docs/13 §5.1, VP-03). ── */
 .tk-slider {
@@ -376,7 +408,7 @@ export const STYLESHEET = `
   .tk-modal::after { display: none; }
   .tk-body { flex-direction: column; padding: 20px; gap: 20px; }
   .tk-preview, .tk-controls { flex: 0 0 auto; width: 100%; }
-  .tk-text, .tk-cutouts { border-radius: var(--tk-radius-control, 10px); }
+  .tk-image-controls, .tk-text, .tk-cutouts { border-radius: var(--tk-radius-control, 10px); }
   .tk-slider { --tk-thumb-w: 23px; }
   .tk-zoom-slider { height: 10px; }
   .tk-zoom-slider::-webkit-slider-runnable-track { height: 10px; }
