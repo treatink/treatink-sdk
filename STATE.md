@@ -9,8 +9,10 @@ gate passed, not blocked.
 
 - **Project:** `@treatink/sdk` MVP (native modal + publishable-key client, fixtures-first)
 - **Current phase:** P4 · Live & Pilot (entry gate: P3 exit green → ✅)
-- **Next runnable:** `P4-T06` (SRI+CSP+privacy, `test:e2e -- no-third-party`). `P4-T02` is parked
-  (staging/storage-CORS); P4-T03/T04 are expected blockers; P4-T05 is a human-verified docs checklist.
+- **Next runnable:** `P4-T05` (API-docs update pass — human-verified checklist gate) and `P4-T08`
+  (release pipeline — dry-run publish + size/no-secret gate) remain. `P4-T02` parked
+  (staging/storage-CORS); P4-T03/T04 are expected blockers; `P4-T07` (publish + pilot) needs a live
+  CDN/deploy. Remaining machine-gated work: `P4-T08`.
 - **RETRY_BUDGET:** 3 per task
 - **Scaffold:** repo skeleton laid down (pinned toolchain + `src/` architecture + typed stubs +
   test/fixtures structure). P1-T01/T03 are now *verify* tasks, not *create* tasks. Stubs throw
@@ -80,7 +82,7 @@ gate passed, not blocked.
 | P4-T03 | todo | P4-T01 | Live templates | **expected blocker** — endpoint missing |
 | P4-T04 | todo | P4-T01 | CORS verification | **expected blocker** — API policy |
 | P4-T05 | todo | P4-T01 | API-docs update pass | docs deliverable |
-| P4-T06 | todo | P4-T01 | SRI + CSP + privacy guidance | |
+| P4-T06 | done | P4-T01 | SRI + CSP + privacy guidance | |
 | P4-T07 | todo | P4-T01, P4-T06 | Publish + Riley's pilot | may run hybrid if T02–T04 parked |
 
 ---
@@ -169,3 +171,5 @@ _Newest last. One line per completed task or phase transition:_
 - P3-T08 done — test:e2e quickstart green (6 tests, 3 browsers; doc↔harness lockstep) — edbda4a
 - Phase P3 complete — exit gate green (verify + 189 e2e + check:no-secret; drafts references-only)
 - P4-T01 done — test:e2e http-catalog-orders green (12 tests, 3 browsers) + 7 unit; full e2e 201 green — d3b5837
+- P4-T02 blocked — live asset PUT needs staging + storage-bucket CORS (GP-02); parked per AGENTS §5
+- P4-T06 done — test:e2e no-third-party green (3 browsers); CSP/SRI + Charter §9 privacy note shipped — 5e53278
