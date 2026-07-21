@@ -99,8 +99,12 @@ export function mountModal(
   };
   overlay.addEventListener('keydown', onKeydown);
 
-  // Scroll-lock the page behind (Charter §7.1); restore the exact prior value on unmount.
-  const previousOverflow = doc.body.style.overflow;
+  // Scroll-lock the page behind (Charter §7.1). The pre-lock value lives on a body dataset so
+  // overlapping instances (an animated close racing a fresh open) restore the HOST's value, not
+  // each other's 'hidden'.
+  if (!('tkPrevOverflow' in doc.body.dataset)) {
+    doc.body.dataset['tkPrevOverflow'] = doc.body.style.overflow;
+  }
   doc.body.style.overflow = 'hidden';
   doc.body.appendChild(overlay);
   closeButton.focus(); // initial focus lands inside the dialog
@@ -113,9 +117,35 @@ export function mountModal(
     liveRegion,
     unmount() {
       overlay.removeEventListener('keydown', onKeydown);
-      overlay.remove();
-      doc.body.style.overflow = previousOverflow;
-      if (previouslyFocused?.isConnected) previouslyFocused.focus();
+      const finish = () => {
+        overlay.remove();
+        // Only the LAST overlay standing releases the scroll lock and returns focus — a newer
+        // instance (opened while this one fades) owns both.
+        if (!doc.querySelector('.tk-overlay')) {
+          doc.body.style.overflow = doc.body.dataset['tkPrevOverflow'] ?? '';
+          delete doc.body.dataset['tkPrevOverflow'];
+          if (previouslyFocused?.isConnected) previouslyFocused.focus();
+        }
+      };
+      // Animated close (owner 2026-07-21): reverse the entry animation, then remove. Reduced
+      // motion (or no matchMedia in odd embeds) unmounts immediately; a timeout backstops
+      // animationend so the overlay can never linger.
+      const reducedMotion = doc.defaultView?.matchMedia?.(
+        '(prefers-reduced-motion: reduce)',
+      ).matches;
+      if (reducedMotion !== false) {
+        finish();
+        return;
+      }
+      overlay.classList.add('tk-closing');
+      let settled = false;
+      const once = () => {
+        if (settled) return;
+        settled = true;
+        finish();
+      };
+      overlay.addEventListener('animationend', once, { once: true });
+      setTimeout(once, 300);
     },
   };
 }

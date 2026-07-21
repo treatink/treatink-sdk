@@ -35,9 +35,6 @@ export function mountImageControls(
   root.className = 'tk-image-controls';
   root.hidden = true;
 
-  const left = doc.createElement('div');
-  left.className = 'tk-image-controls-left';
-
   const label = doc.createElement('span');
   label.className = 'tk-card-label';
   label.textContent = copy.imageControlsLabel;
@@ -67,8 +64,8 @@ export function mountImageControls(
     iconButton('tk-delete-image', 'trash', copy.deleteImageLabel, () => hooks.onDelete()),
   );
 
-  left.append(label, row);
-  root.appendChild(left);
+  // Owner layout (2026-07-21): stacked — label, then the buttons, then the slider (sliderHost).
+  root.append(label, row);
   host.appendChild(root);
 
   return {

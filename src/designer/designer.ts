@@ -216,7 +216,9 @@ function render(state: ActiveDesigner): void {
     ? String(PET_NAME_POSITIONS[state.cutout?.template.petNamePosition ?? 'default'])
     : '';
 
-  // Low-res flag (Charter D.8, P2-T10): non-blocking warning, announced politely to AT.
+  // Low-res flag (Charter D.8, P2-T10): still computed and returned in DesignerResult.lowRes,
+  // and exposed as data-lowres for tests — but the visible banner + AT announcement are
+  // SUPPRESSED for now (owner 2026-07-21). Re-enable by restoring the hidden/liveRegion toggles.
   const lowRes =
     state.editor && state.photo
       ? computeLowRes(state.editor, {
@@ -224,11 +226,8 @@ function render(state: ActiveDesigner): void {
           height: state.photo.naturalHeight,
         })
       : false;
-  if (lowRes !== state.lowRes) {
-    state.lowRes = lowRes;
-    if (state.lowResWarning) state.lowResWarning.hidden = !lowRes;
-    state.handles.liveRegion.textContent = lowRes ? state.lowResCopy : '';
-  }
+  state.lowRes = lowRes;
+  state.canvas.dataset['lowres'] = String(lowRes);
 
   state.save?.setEnabled(canSave(state)); // photo + cutout required; low-res never blocks
 }
@@ -344,6 +343,10 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
   }
 
   const copy = resolveCopy(context.copy);
+
+  // A previous instance may still be fading out (animated close) — cut it instantly so exactly
+  // one overlay ever exists for selectors, focus, and stacking.
+  for (const closing of document.querySelectorAll('.tk-overlay.tk-closing')) closing.remove();
 
   // Draft re-open (P3-T04): restore METADATA — cutout, transform, text, zone. The photo is NOT
   // re-hydrated (no bytes stored; a pk key cannot GET the source asset back — docs/10 §6): the

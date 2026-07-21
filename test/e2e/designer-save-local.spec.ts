@@ -100,7 +100,7 @@ test('save stays disabled until a photo exists (cutout auto-preselects, P5-T07)'
 test('low-res warns but does not block saving (Charter D.8)', async ({ page }) => {
   await openForSave(page, labels[0]!.id);
   await page.setInputFiles('.tk-file-input', join(ASSETS, 'lowres.png'));
-  await expect(page.locator('.tk-lowres')).toBeVisible();
+  await expect(page.locator('.tk-canvas')).toHaveAttribute('data-lowres', 'true'); // banner suppressed
   await expect(page.locator('.tk-save-button')).toBeEnabled();
   await page.click('.tk-save-button');
   await expect(page.locator('.tk-overlay')).toHaveCount(0);

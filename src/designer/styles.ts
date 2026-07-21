@@ -21,6 +21,15 @@ const WAVE_MASK = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/
 
 export const STYLESHEET = `
 .tk-overlay, .tk-overlay * { margin: 0; padding: 0; box-sizing: border-box; }
+/* ── Appear/hide (owner 2026-07-21): opacity-only fades — transforms are deliberately avoided
+ *    so the canvas geometry (pointer math, drag anchors) is stable from the first frame. ── */
+@keyframes tk-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+.tk-overlay { animation: tk-overlay-in 0.2s ease-out; }
+.tk-modal { animation: tk-overlay-in 0.25s ease-out; }
+.tk-overlay.tk-closing { animation: tk-overlay-in 0.18s ease-in reverse forwards; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) {
+  .tk-overlay, .tk-modal, .tk-overlay.tk-closing { animation: none; }
+}
 .tk-overlay {
   position: fixed;
   inset: 0;
@@ -181,6 +190,9 @@ export const STYLESHEET = `
 @media (max-width: ${MOBILE_BREAKPOINT_PX - 1}px) {
   .tk-upload-overlay { bottom: 35%; } /* store ≤700px override */
   .tk-upload-button { padding: 10px 15px; } /* store default-btn mobile padding */
+  /* Owner (2026-07-21): tighter empty state on small screens. */
+  .tk-upload-icon { width: 44px; height: 44px; }
+  .tk-upload-prompt { font-size: 14px; line-height: 20px; margin-bottom: 12px; }
 }
 
 /* ── Control cards: store .customizer-controls (docs/13 §5). ── */
@@ -199,17 +211,11 @@ export const STYLESHEET = `
   user-select: none;
 }
 
-/* ── Image-controls card (docs/13 §5.1): label + rotate/delete on the left, slider right. ── */
-.tk-image-controls { flex-direction: row; align-items: center; gap: 8px; }
+/* ── Image-controls card (docs/13 §5.1; owner 2026-07-21: stacked column —
+ *    label on top, then the action buttons, then the slider). ── */
+.tk-image-controls { align-items: center; gap: 8px; }
 .tk-image-controls[hidden] { display: none; }
-.tk-image-controls-left {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: center;
-  flex: 0 0 auto;
-}
-.tk-icon-row { display: flex; }
+.tk-icon-row { display: flex; justify-content: center; }
 .tk-icon-button {
   display: inline-flex;
   align-items: center;
@@ -223,7 +229,7 @@ export const STYLESHEET = `
   transition: background 0.2s;
 }
 .tk-icon-button:hover { background: #f3f4f6; }
-.tk-image-controls .tk-slider { flex: 1 1 auto; margin-top: 16px; }
+.tk-image-controls .tk-slider { width: 100%; margin-top: 8px; }
 
 /* ── Zoom: slider-only, store .slider-input (docs/13 §5.1, VP-03). ── */
 .tk-slider {
@@ -545,7 +551,27 @@ export const STYLESHEET = `
   color: #374151;
   cursor: pointer;
 }
-.tk-text-checkbox { width: 16px; height: 16px; }
+/* Custom purple checkbox (owner 2026-07-21 — replaces the store's native default). */
+.tk-text-checkbox {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  border: 2px solid var(--tk-primary, #a99cdf);
+  border-radius: 5px;
+  background: #ffffff no-repeat center / 12px;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+.tk-text-checkbox:checked {
+  background-color: var(--tk-primary, #a99cdf);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+}
+.tk-text-checkbox:focus-visible {
+  outline: 2px solid var(--tk-primary-strong, #8c7ec2);
+  outline-offset: 2px;
+}
 .tk-text-input {
   width: 100%;
   max-width: 320px;
@@ -599,6 +625,9 @@ export const STYLESHEET = `
   .tk-preview, .tk-controls { flex: 0 0 auto; width: 100%; }
   .tk-image-controls, .tk-text, .tk-cutouts { border-radius: var(--tk-radius-control, 10px); }
   .tk-save-button { padding: 10px 15px; } /* store default-btn mobile padding */
+  /* Owner (2026-07-21): smaller header title on mobile. 19px at weight 700 stays WCAG
+   * "large text" (≥14pt bold — axe requires 700), keeping white-on-#f26b1d at the 3:1 threshold. */
+  .tk-title { font-size: 19px; font-weight: 700; }
   .tk-slider { --tk-thumb-w: 23px; }
   .tk-zoom-slider { height: 10px; }
   .tk-zoom-slider::-webkit-slider-runnable-track { height: 10px; }

@@ -332,3 +332,14 @@ the rendered slider look; copy defaults; empty-state behavior; auto-preselected 
 
 These are engineering divergences, not visual ones — if any of them turns out to change a rendered
 pixel beyond its row's stated intent, that's a spec bug: stop and re-check against the store.
+
+## 11. Post-parity owner adjustments (2026-07-21) — deliberate deltas FROM the store
+
+| # | Adjustment | Detail |
+| --- | --- | --- |
+| A-01 | Modal appear/hide animation | Opacity-only fades (in 0.2/0.25s, out 0.18s). Transforms deliberately avoided so canvas geometry is stable from the first frame; reduced-motion disables; a fresh open cuts a still-fading instance. |
+| A-02 | Custom purple checkbox | Replaces the store's native default (§5.2): 18px, 2px `--tk-primary` border, radius 5, checked = purple fill + white check (data-URI SVG). |
+| A-03 | Smaller mobile empty state | ≤700px: upload icon 44px, prompt 14px/20px. |
+| A-04 | Smaller mobile header title | ≤700px: 19px / weight 700 (axe large-text keeps white-on-#f26b1d at 3:1). |
+| A-05 | Image-controls stacked | Column: label → rotate/delete buttons → slider (store had label+buttons beside the slider). |
+| A-06 | Low-res banner suppressed | Detection stays (`data-lowres`, `DesignerResult.lowRes`); the visible banner + AT announcement are off for now. Re-enable via the toggles in `designer.ts` render(). |
