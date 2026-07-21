@@ -200,13 +200,22 @@ class TreatinkError extends Error {
 ## 8. Theme, copy, order payload
 
 ```ts
-interface ThemeConfig {                     // → --tk-* CSS vars (docs/design-reference §3)
-  primary?: string;          // default #8EA0F6
-  accent?: string;           // default #EA8D00
-  headerBackground?: string; // default #F26B1D
+// Defaults = the EXACT store palette (docs/13 §1, VP-01 — supersedes Charter §7.3).
+// Derived tokens resolve explicit-wins: set them for full control, or override only the base
+// (primary/accent/borderRadius) and the SDK derives coherent shades via color-mix()/min().
+interface ThemeConfig {                     // → --tk-* CSS vars (docs/13 §1)
+  primary?: string;          // default #a99cdf (store --purple)
+  primaryStrong?: string;    // default #8c7ec2 (store --purple-darker); derives from primary
+  panelBackground?: string;  // default #e2e6ff (store --purple-light); derives from primary
+  accent?: string;           // default #ffa518 (store --orange)
+  accentHover?: string;      // default #dd9133 (store --orange-hover); derives from accent
+  headerBackground?: string; // default #F26B1D (SDK modal chrome, VP-04)
   headerText?: string;
   surface?: string;
-  borderRadius?: string;     // default '15px'
+  surfaceAlt?: string;       // default #F6F6FC (store --purple-extra-light); derives from primary
+  borderRadius?: string;     // default '20px' (cards)
+  buttonRadius?: string;     // default '15px' (filled buttons); min()-derives from borderRadius
+  controlRadius?: string;    // default '10px' (chips/thumbs/inputs); min()-derives from borderRadius
   fontFamily?: string;       // Montserrat/Mitr + system fallback
   overlayColor?: string;
   zIndex?: number;           // default 2147483000
@@ -216,12 +225,19 @@ interface ThemeConfig {                     // → --tk-* CSS vars (docs/design-
 interface CopyStrings {                     // every user-visible designer string — all overridable
   headerTitle: string;                 // 'Personalize Your Product'
   closeLabel: string;
-  uploadPrompt: string;                // 'Drag & drop your photo'
+  uploadPrompt: string;                // "Drag your pet's photo here\nand start personalizing!"
   uploadButton: string;                // 'Or Select Image'
-  zoomInLabel: string; zoomOutLabel: string; zoomSliderLabel: string;
-  categoryAll: string;                 // 'Browse All'
-  personalizationTextLabel: string;    // 'Include Pet Name on Label' (Riley's) / 'Personalization Text'
-  personalizationTextPlaceholder: string;
+  zoomInLabel: string; zoomOutLabel: string;  // compat only — no −/+ buttons (VP-03)
+  zoomSliderLabel: string;
+  categoryAll: string;                 // 'Browse All' (the button under the pager)
+  imageControlsLabel: string;          // 'Image Controls'
+  rotateLeftLabel: string; rotateRightLabel: string; deleteImageLabel: string;
+  cutoutsLabel: string;                // 'Choose Your Background'
+  browseAllTitle: string;              // 'Browse All Backgrounds'
+  searchPlaceholder: string;           // 'Search'
+  noCutoutsFound: string;              // 'No backgrounds found'
+  personalizationTextLabel: string;    // 'Include Pet Name on Label' (store default)
+  personalizationTextPlaceholder: string;  // 'Pet Name'
   lowResWarning: string;
   saveButton: string;                  // 'Save Customization'
   savingLabel: string; saveErrorRetry: string;

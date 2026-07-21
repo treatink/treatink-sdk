@@ -228,13 +228,34 @@ export class TreatinkError extends Error {
 
 /* ── Theme, copy, order payload ───────────────────────────────────────────── */
 
+/**
+ * Defaults are the exact store palette (docs/13 §1, VP-01). Derived tokens (primaryStrong,
+ * panelBackground, accentHover, surfaceAlt, buttonRadius, controlRadius) resolve explicit-wins:
+ * set them for full control, or override only the base token (primary/accent/borderRadius) and
+ * the SDK derives a coherent shade/step-down for you.
+ */
 export interface ThemeConfig {
+  /** Purple family base. Default '#a99cdf' (store --purple). */
   primary?: string;
+  /** Darker primary: slider track, purple-button hovers. Default '#8c7ec2' (store --purple-darker). */
+  primaryStrong?: string;
+  /** Control-card background. Default '#e2e6ff' (store --purple-light). */
+  panelBackground?: string;
+  /** Orange family base: save CTA, pagination dots, upload icon. Default '#ffa518' (store --orange). */
   accent?: string;
+  /** Save-CTA hover. Default '#dd9133' (store --orange-hover). */
+  accentHover?: string;
   headerBackground?: string;
   headerText?: string;
   surface?: string;
+  /** Browse-All modal surface + close button. Default '#F6F6FC' (store --purple-extra-light). */
+  surfaceAlt?: string;
+  /** Card radius (modal, canvas frame, control cards). Default '20px'. */
   borderRadius?: string;
+  /** Filled-button radius (save, picker). Default '15px'. */
+  buttonRadius?: string;
+  /** Chips/thumbs/inputs radius. Default '10px'. */
+  controlRadius?: string;
   fontFamily?: string;
   overlayColor?: string;
   zIndex?: number;
@@ -244,12 +265,26 @@ export interface ThemeConfig {
 export interface CopyStrings {
   headerTitle: string;
   closeLabel: string;
+  /** May contain '\n' — rendered as separate lines (store two-line prompt). */
   uploadPrompt: string;
   uploadButton: string;
+  /** Retained for compatibility; unused since the zoom −/+ buttons were removed (docs/13 §5.1, VP-03). */
   zoomInLabel: string;
+  /** Retained for compatibility; unused since the zoom −/+ buttons were removed (docs/13 §5.1, VP-03). */
   zoomOutLabel: string;
   zoomSliderLabel: string;
+  /** The "Browse All" button under the cutout pager (docs/13 §5.3). */
   categoryAll: string;
+  imageControlsLabel: string;
+  rotateLeftLabel: string;
+  rotateRightLabel: string;
+  deleteImageLabel: string;
+  /** Cutout-card heading. Store: 'Choose Your Background'. */
+  cutoutsLabel: string;
+  /** Browse-All modal title. Store: 'Browse All Backgrounds'. */
+  browseAllTitle: string;
+  searchPlaceholder: string;
+  noCutoutsFound: string;
   personalizationTextLabel: string;
   personalizationTextPlaceholder: string;
   lowResWarning: string;
