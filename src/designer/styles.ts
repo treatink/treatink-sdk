@@ -345,8 +345,9 @@ export const STYLESHEET = `
 .tk-cutout-thumb:focus-visible { border: 2px solid var(--tk-primary, #a99cdf); outline: none; }
 .tk-cutout-thumb[aria-selected='true'] { border: 2px solid var(--tk-primary, #a99cdf); }
 
-/* Personalization text (store pet-name card, docs/13 §5.2 — full parity in P5-T06). */
-.tk-text { align-items: center; }
+/* Personalization text: store pet-name card (docs/13 §5.2) — centered column, native 16px
+ * checkbox (no accent override — store ships the UA default), borderless white pill input. */
+.tk-text { align-items: center; gap: 8px; }
 .tk-text-toggle {
   display: flex;
   align-items: center;
