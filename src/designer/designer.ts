@@ -22,6 +22,7 @@ import { runSavePipeline } from '../save/pipeline.js';
 import type { CanvasLike, EditorImage, EngineEnv } from '../cutout-engine/index.js';
 import type { LoadedPhoto } from '../media/exif.js';
 import { mountCutouts } from './controls/cutouts.js';
+import type { CutoutsControl } from './controls/cutouts.js';
 import { mountSave } from './controls/save.js';
 import type { SaveControl } from './controls/save.js';
 import { mountText } from './controls/text.js';
@@ -80,6 +81,7 @@ interface ActiveDesigner {
   frame: HTMLElement;
   upload: UploadControl | null;
   imageControls: ImageControlsControl | null;
+  cutouts: CutoutsControl | null;
   photo: LoadedPhoto | null;
   editor: EditorImage | null;
   isDragging: boolean;
@@ -294,6 +296,7 @@ function deletePhoto(state: ActiveDesigner): void {
   state.zoom?.disable();
   state.imageControls?.setVisible(false); // store: card exists only with a photo
   state.upload?.setVisible(true); // the empty-state overlay returns
+  state.cutouts?.setPhoto(null); // thumbs drop the photo layer
   render(state);
 }
 
@@ -302,6 +305,7 @@ function acceptPhoto(state: ActiveDesigner, photo: LoadedPhoto): void {
   state.photo = photo;
   state.upload?.setVisible(false); // the empty-state overlay yields to the photo (docs/13 §4)
   state.imageControls?.setVisible(true);
+  state.cutouts?.setPhoto(photo.objectUrl); // thumbs live-preview the photo behind each frame
   const fit = computeInitialFit(photo.naturalWidth, photo.naturalHeight);
   if (state.restoredTransform) {
     // Draft re-open (P3-T04): fitted box + maxScale derive from the re-selected photo; the
@@ -376,6 +380,7 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
     frame,
     upload: null,
     imageControls: null,
+    cutouts: null,
     photo: null,
     editor: null,
     isDragging: false,
@@ -485,7 +490,7 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
       },
     },
   );
-  mountCutouts(
+  state.cutouts = mountCutouts(
     document,
     handles.controls,
     copy,

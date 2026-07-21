@@ -83,16 +83,18 @@ test('the preview object URL is a real image (the display composite)', async ({ 
   expect(dims).toEqual({ width: 1000, height: 1000 });
 });
 
-test('save stays disabled until both photo and cutout exist', async ({ page }) => {
-  await page.click('#open-designer'); // no preselect
+test('save stays disabled until a photo exists (cutout auto-preselects, P5-T07)', async ({
+  page,
+}) => {
+  await page.click('#open-designer'); // no explicit preselect
   await expect(page.locator('.tk-modal')).toBeVisible();
+  await expect(page.locator('.tk-save-button')).toBeDisabled();
+  // the default cutout arrives on its own (store behavior) — still not saveable without a photo
+  await expect(page.locator('.tk-canvas')).toHaveAttribute('data-cutout', /.+/);
   await expect(page.locator('.tk-save-button')).toBeDisabled();
   await page.setInputFiles('.tk-file-input', join(ASSETS, 'portrait.png'));
   await expect(page.locator('.tk-canvas')).toHaveAttribute('data-scale', '1');
-  await expect(page.locator('.tk-save-button')).toBeDisabled(); // still no cutout
-  const firstThumb = page.locator('.tk-cutout-thumb').first();
-  await firstThumb.click();
-  await expect(page.locator('.tk-save-button')).toBeEnabled();
+  await expect(page.locator('.tk-save-button')).toBeEnabled(); // photo + auto cutout = saveable
 });
 
 test('low-res warns but does not block saving (Charter D.8)', async ({ page }) => {

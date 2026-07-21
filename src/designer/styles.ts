@@ -6,6 +6,8 @@
  * tk- class names are the documented theming contract (docs/02 §3) — renaming is breaking.
  */
 
+import { THUMB_BG_DATA_URI } from './thumb-bg.js';
+
 export const STYLES_ELEMENT_ID = 'tk-styles';
 
 /** Store stacking breakpoint: below this the two columns stack (store @media 700px, docs/13 §3). */
@@ -302,8 +304,26 @@ export const STYLESHEET = `
 }
 .tk-zoom-slider:disabled { opacity: 0.5; cursor: default; }
 
-/* Cutout browser (interim — store chips/pager/thumbs land in P5-T07). */
-.tk-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+/* ── Cutout browser: store frame-select card (docs/13 §5.3). ── */
+.tk-cutouts { gap: 0; }
+.tk-cutouts-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.tk-collapsible { overflow: hidden; transition: height 0.3s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .tk-collapsible { transition: none; }
+}
+.tk-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 8px; }
 .tk-chip {
   background: transparent;
   border: 2px solid var(--tk-primary, #a99cdf);
@@ -312,6 +332,7 @@ export const STYLESHEET = `
   padding: 4px 8px;
   font-size: 11px;
   font-weight: 500;
+  text-transform: capitalize;
   cursor: pointer;
   transition: 0.2s;
 }
@@ -320,30 +341,91 @@ export const STYLESHEET = `
   border-color: var(--tk-primary, #a99cdf);
   color: #ffffff;
 }
+/* 3-up scroll-snap pager, 320px like the store swiper (slidesPerView 3, spaceBetween 10). */
+.tk-pager {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-top: 12px;
+}
 .tk-cutout-row {
   display: flex;
-  gap: 8px;
+  gap: 10px;
+  width: 100%;
+  max-width: 320px;
   overflow-x: auto;
-  padding-bottom: 6px;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
 }
-.tk-cutout-grid { flex-wrap: wrap; overflow-x: visible; max-height: 40vh; overflow-y: auto; }
+.tk-cutout-row::-webkit-scrollbar { display: none; }
+.tk-cutout-grid {
+  flex-wrap: wrap;
+  overflow-x: visible;
+  max-height: 40vh;
+  overflow-y: auto;
+  scroll-snap-type: none;
+}
+/* Layered thumb: grey backdrop + photo (z0) behind the frame PNG (z1) — store .bg-buttons. */
 .tk-cutout-thumb {
-  flex: 0 0 auto;
-  width: 64px;
-  height: 85px;
+  position: relative;
+  flex: 0 0 calc(33.333% - 7px);
+  aspect-ratio: 3 / 4;
+  scroll-snap-align: start;
   padding: 0;
   border: 1px solid #ffffff;
   border-radius: var(--tk-radius-control, 10px);
-  background: #ffffff;
+  background-image: url('${THUMB_BG_DATA_URI}');
+  background-size: 100%;
   cursor: pointer;
   overflow: hidden;
   transition: border-color 0.2s;
   user-select: none;
 }
-.tk-cutout-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tk-thumb-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+.tk-thumb-frame {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
 .tk-cutout-thumb:hover { border-color: var(--tk-primary, #a99cdf); }
 .tk-cutout-thumb:focus-visible { border: 2px solid var(--tk-primary, #a99cdf); outline: none; }
 .tk-cutout-thumb[aria-selected='true'] { border: 2px solid var(--tk-primary, #a99cdf); }
+/* Store pagination bullets: orange, 10px → 14px active (frames-pagination). */
+.tk-dots { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.tk-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: var(--tk-accent, #ffa518);
+  opacity: 0.3;
+  cursor: pointer;
+  transition: opacity 0.3s ease-in-out, width 0.3s, height 0.3s;
+}
+.tk-dot[aria-current='true'] { width: 14px; height: 14px; opacity: 1; }
+.tk-browse-wrap { display: flex; justify-content: center; margin-top: 12px; }
+.tk-browse-all {
+  background: var(--tk-primary, #a99cdf);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--tk-radius-control, 10px);
+  padding: 10px 20px;
+  font-weight: 500;
+  font-size: 15px;
+  cursor: pointer;
+}
 
 /* Personalization text: store pet-name card (docs/13 §5.2) — centered column, native 16px
  * checkbox (no accent override — store ships the UA default), borderless white pill input. */
