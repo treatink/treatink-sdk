@@ -9,9 +9,8 @@ gate passed, not blocked.
 
 - **Project:** `@treatink/sdk` MVP (native modal + publishable-key client, fixtures-first)
 - **Current phase:** P4 · Live & Pilot (entry gate: P3 exit green → ✅)
-- **Next runnable:** `P4-T02` (live assets — likely parks on staging/storage-CORS); the next
-  clean machine-gated task is `P4-T06` (SRI+CSP+privacy, `test:e2e -- no-third-party`). P4-T03/T04
-  are expected blockers; P4-T05 is a human-verified docs checklist.
+- **Next runnable:** `P4-T06` (SRI+CSP+privacy, `test:e2e -- no-third-party`). `P4-T02` is parked
+  (staging/storage-CORS); P4-T03/T04 are expected blockers; P4-T05 is a human-verified docs checklist.
 - **RETRY_BUDGET:** 3 per task
 - **Scaffold:** repo skeleton laid down (pinned toolchain + `src/` architecture + typed stubs +
   test/fixtures structure). P1-T01/T03 are now *verify* tasks, not *create* tasks. Stubs throw
@@ -77,7 +76,7 @@ gate passed, not blocked.
 | ID | Status | depends_on | Title | Note |
 |---|---|---|---|---|
 | P4-T01 | done | P3 exit | HttpTransport (catalog + orders) | real documented paths |
-| P4-T02 | todo | P4-T01 | Live assets upload (session/asset reconciliation) | **expected blocker** — API decision |
+| P4-T02 | blocked | P4-T01 | Live assets upload (session/asset reconciliation) | **expected blocker** — storage-CORS/staging |
 | P4-T03 | todo | P4-T01 | Live templates | **expected blocker** — endpoint missing |
 | P4-T04 | todo | P4-T01 | CORS verification | **expected blocker** — API policy |
 | P4-T05 | todo | P4-T01 | API-docs update pass | docs deliverable |
@@ -97,6 +96,24 @@ _None yet._ When a task blocks, add an entry here (template — `AGENTS.md` §5)
 - What would unblock it:
 - Safe to skip ahead? yes/no — which tasks remain runnable meanwhile
 ```
+
+### P4-T02 — Live asset upload (two-step, against real storage)   (blocked)
+- What I tried: HttpTransport ships for the live catalog paths (P4-T01). Its asset methods
+  (`declareAsset`/`putAssetBytes`/`finalizeAsset`) are present but reject with a "wired in P4-T02"
+  notice; the declare→PUT→finalize wiring itself is straightforward. The task's value, though, is
+  validating the **browser PUT to real presigned object storage** — which a mock cannot prove.
+- Why it's blocked: the gate is `npm run test:e2e -- http-assets` **(staging)** — deliberately
+  staging-only (unlike P4-T01, whose gate allows a contract-mock). No staging `/v1/assets` endpoint
+  and no storage-bucket CORS for channel origins exist in this environment (GP-02, backend/infra;
+  phase `P4-T02` note; `docs/04` §2.3). Passing this against a mock would fake the one thing the gate
+  exists to check, so per `AGENTS.md` §0.4/§5 it parks.
+- What would unblock it: a staging `/v1/assets` (declare→PUT→finalize) reachable, **and**
+  storage-bucket CORS deployed for registered channel origins (GP-02). Then wire the three calls in
+  HttpTransport and validate the real browser PUT against staging.
+- Safe to skip ahead? **yes** — `P4-T06` (SRI+CSP+privacy, machine-gated) and `P4-T05` (docs) are
+  runnable and independent; the fixtures asset flow (declare→PUT→finalize → local object URL) covers
+  the pipeline meanwhile (P3 e2e). `P4-T03`/`P4-T04` are also expected blockers; `P4-T07` may run
+  hybrid/fixtures-backed while these are parked.
 
 Pre-identified blockers to expect (not failures). Confirmed against the real `treatink-api` repo —
 see **`GAP-PLAN.md`** for the fixes and owners:
