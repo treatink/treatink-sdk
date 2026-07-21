@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Treatink SDK quickstart harness</title>
+  </head>
+  <body>
+    <h1>Riley's Pets — personalize your product</h1>
+    <p>Partner storefront standing in for a cold integrator. Fixtures mode only.</p>
+    <!--
+      This page is the executable twin of docs/12-integration-quickstart.md. The flow between the
+      `quickstart:flow` markers is byte-identical to the doc's fixtures sample (quickstart.spec
+      asserts it) — the machine proof that the copy-runnable sample is exactly what ships.
+      Only the import specifier differs: here we load the locally-built module.
+    -->
+    <script type="module">
+      import { Treatink } from '/dist/index.js';
+
+      // Your storefront's add-to-cart. In this fixtures demo it just records the line.
+      window.__cart = [];
+      function addToCart(line) {
+        window.__cart.push(line);
+      }
+
+      // quickstart:flow:start
+      const tk = Treatink.init({
+        apiKey: 'pk_test_quickstart',
+        channel: 'rileyspets.com',
+        mode: 'fixtures',
+      });
+
+      // Open the modal designer. In fixtures mode everything runs locally — no network,
+      // deterministic ids — so this snippet is copy-runnable exactly as written.
+      tk.designer.open({
+        sku: 'SSGTTBC',
+        cutoutLabelId: 'cut_fx_00000001', // optional: preselect a cutout (omit to let the shopper choose)
+        onComplete(result) {
+          // The shopper saved. Add the design to your cart: keep result.draftId as the line-item
+          // reference and result.previewUrl (a local object URL) for the cart thumbnail.
+          addToCart({ sku: result.sku, draftId: result.draftId, previewUrl: result.previewUrl });
+        },
+      });
+      // quickstart:flow:end
+
+      window.tk = tk; // lets quickstart.spec drive the same instance the flow created
+    </script>
+  </body>
+</html>

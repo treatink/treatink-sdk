@@ -62,14 +62,14 @@ gate passed, not blocked.
 ### P3 · Save Path
 | ID | Status | depends_on | Title |
 |---|---|---|---|
-| P3-T01 | todo | P2 exit | Upload-on-save pipeline |
-| P3-T02 | todo | P3-T01 | Save failure UX (upload_failed + retry) |
-| P3-T03 | todo | P3-T01 | Drafts store (references only) |
-| P3-T04 | todo | P3-T03 | Draft re-open |
-| P3-T05 | todo | P3-T01 | orders.buildPayload (live order schema) |
-| P3-T06 | todo | P3-T05 | Server submit helper |
-| P3-T07 | todo | P3-T02, P3-T03, P3-T04, P3-T05, P3-T06 | Full happy-path e2e |
-| P3-T08 | todo | P3-T07 | Integration quickstart & API reference docs |
+| P3-T01 | done | P2 exit | Upload-on-save pipeline |
+| P3-T02 | done | P3-T01 | Save failure UX (upload_failed + retry) |
+| P3-T03 | done | P3-T01 | Drafts store (references only) |
+| P3-T04 | done | P3-T03 | Draft re-open |
+| P3-T05 | done | P3-T01 | orders.buildPayload (live order schema) |
+| P3-T06 | done | P3-T05 | Server submit helper |
+| P3-T07 | done | P3-T02, P3-T03, P3-T04, P3-T05, P3-T06 | Full happy-path e2e |
+| P3-T08 | done | P3-T07 | Integration quickstart & API reference docs |
 
 ### P4 · Live & Pilot
 | ID | Status | depends_on | Title | Note |
@@ -140,3 +140,11 @@ _Newest last. One line per completed task or phase transition:_
 - P2-T10 done — test:e2e designer-lowres green (9 tests) — 2378bb4
 - P2-T11 done — test:e2e designer-save-local green (12 tests; Chromium toBlob-stall fallback) — b4452b9
 - Phase P2 complete — exit gate green (verify + 135 e2e + 15 a11y + budgets + no-secret)
+- P3-T01 done — test:e2e save-pipeline green (9 tests) — 01ff2aa
+- P3-T02 done — test:e2e save-failure green (15 tests) — 9e7fdce
+- P3-T03 done — drafts unit+e2e green (18 tests) — 92b5187 + 9587393
+- P3-T04 done — test:e2e draft-reopen green (12 tests) — 2c74ee1
+- P3-T05 done — npm test -- orders green (3 tests) — b534512
+- P3-T06 done — npm test -- server + check:no-secret green (4 tests) — 42eb180
+- P3-T07 done — test:e2e happy-path green (3 browsers) — 99c2097 + aebeca0
+- P3-T08 done — test:e2e quickstart green (6 tests, 3 browsers; doc↔harness lockstep)
