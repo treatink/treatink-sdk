@@ -28,3 +28,18 @@ pipelines:
           - npm run build
           - npm run test:e2e
           - npm run test:a11y
+
+  # Release gate (P4-T08 / GP-15): on every v* tag, enforce the pre-publish guardrails — build,
+  # size budgets, no-secret, and package-contents/SRI validation — BEFORE any publish. The real
+  # dual publish (CDN sdk.treatink.com/v1/ + `npm publish`) is the guarded go-live step: it requires
+  # a maintainer to set `private:false` + a real version and configure NPM_TOKEN (see RELEASING.md).
+  # Kept out of CI here so no tag can trigger an unreviewed publish.
+  tags:
+    'v*':
+      - step:
+          name: Release gate (dry-run — build · size · no-secret · pack · SRI)
+          caches:
+            - npm
+          script:
+            - npm ci
+            - npm run release:dry-run

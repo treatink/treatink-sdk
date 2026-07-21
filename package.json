@@ -38,7 +38,8 @@
     "test:a11y": "playwright test designer-a11y --pass-with-no-tests",
     "size": "node scripts/size.mjs",
     "check:no-secret": "node scripts/check-no-secret.mjs",
-    "verify": "npm run typecheck && npm run lint && npm run test && npm run size"
+    "verify": "npm run typecheck && npm run lint && npm run test && npm run size",
+    "release:dry-run": "node scripts/release.mjs"
   },
   "dependencies": {
     "exifr": "^7.1.3",
