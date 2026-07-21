@@ -8,8 +8,8 @@ Start with the first **runnable** task (`docs/03` §3): `todo`, all `depends_on`
 gate passed, not blocked.
 
 - **Project:** `@treatink/sdk` MVP (native modal + publishable-key client, fixtures-first)
-- **Current phase:** P3 · Save Path (entry gate: P2 exit green → ✅)
-- **Next runnable:** `P3-T01` (Upload-on-save pipeline)
+- **Current phase:** P4 · Live & Pilot (entry gate: P3 exit green → ✅)
+- **Next runnable:** `P4-T01` (HttpTransport — catalog + orders, real documented paths)
 - **RETRY_BUDGET:** 3 per task
 - **Scaffold:** repo skeleton laid down (pinned toolchain + `src/` architecture + typed stubs +
   test/fixtures structure). P1-T01/T03 are now *verify* tasks, not *create* tasks. Stubs throw
@@ -23,8 +23,8 @@ gate passed, not blocked.
 |---|---|---|---|
 | P1 Core | **done** ✅ | blueprint present ✅ | exit gate green 2026-07-20 (130 tests) |
 | P2 Designer | **done** ✅ | P1 exit green ✅ | exit gate green 2026-07-20 (135 e2e + 15 a11y; budgets hold) |
-| P3 Save Path | todo | P2 exit green ✅ | full `test:e2e` happy path + persistence + no-secret |
-| P4 Live & Pilot | todo | P3 exit green | live smoke green **or** blockers parked; published |
+| P3 Save Path | **done** ✅ | P2 exit green ✅ | exit gate green 2026-07-21 (verify + 189 e2e + no-secret) |
+| P4 Live & Pilot | todo | P3 exit green ✅ | live smoke green **or** blockers parked; published |
 
 ## Task ledger
 
@@ -147,4 +147,5 @@ _Newest last. One line per completed task or phase transition:_
 - P3-T05 done — npm test -- orders green (3 tests) — b534512
 - P3-T06 done — npm test -- server + check:no-secret green (4 tests) — 42eb180
 - P3-T07 done — test:e2e happy-path green (3 browsers) — 99c2097 + aebeca0
-- P3-T08 done — test:e2e quickstart green (6 tests, 3 browsers; doc↔harness lockstep)
+- P3-T08 done — test:e2e quickstart green (6 tests, 3 browsers; doc↔harness lockstep) — edbda4a
+- Phase P3 complete — exit gate green (verify + 189 e2e + check:no-secret; drafts references-only)
