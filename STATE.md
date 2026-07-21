@@ -95,8 +95,8 @@ gate passed, not blocked.
 | P5-T04 | done | P5-T02 | Slider-only zoom + px tooltip (−/+ buttons removed) |
 | P5-T05 | done | P5-T03, P5-T04 | Image-controls card (rotate ±15° + delete + slider) |
 | P5-T06 | done | P5-T02 | Pet-name card (native checkbox + pill input) |
-| P5-T07 | in_progress | P5-T02 | Cutout browser (chips, 3-up pager + dots, layered thumbs, auto-preselect) |
-| P5-T08 | todo | P5-T07 | Browse-All modal + search |
+| P5-T07 | done | P5-T02 | Cutout browser (chips, 3-up pager + dots, layered thumbs, auto-preselect) |
+| P5-T08 | in_progress | P5-T07 | Browse-All modal + search |
 | P5-T09 | todo | P5-T03, P5-T05, P5-T06, P5-T07, P5-T08 | Save row + full-parity sweep |
 
 ---
@@ -197,3 +197,4 @@ _Newest last. One line per completed task or phase transition:_
 - P5-T04 done — test:e2e designer-position (21) + test:a11y (15) green, 3 browsers — a846da7
 - P5-T05 done — position e2e (27) + goldens (41, +rotate-15 from store renderer) + engine units green
 - P5-T06 done — test:e2e designer-text green (15 tests, 3 browsers)
+- P5-T07 done — cutouts+save-local e2e green (42 tests, 3 browsers) + size (chunk 18/150 KB)
