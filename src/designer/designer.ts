@@ -297,7 +297,10 @@ function acceptPhoto(state: ActiveDesigner, photo: LoadedPhoto): void {
   // Oriented dimensions exposed for tests/AT context.
   state.canvas.dataset['naturalWidth'] = String(photo.naturalWidth);
   state.canvas.dataset['naturalHeight'] = String(photo.naturalHeight);
-  state.zoom?.enable(state.editor.maxScale, state.editor.scale);
+  state.zoom?.enable(state.editor.maxScale, state.editor.scale, {
+    width: state.editor.width,
+    height: state.editor.height,
+  });
   render(state);
 }
 

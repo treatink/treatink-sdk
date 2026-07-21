@@ -182,7 +182,7 @@ export const STYLESHEET = `
 }
 
 /* ── Control cards: store .customizer-controls (docs/13 §5). ── */
-.tk-zoom, .tk-text, .tk-cutouts {
+.tk-text, .tk-cutouts {
   background: var(--tk-panel, #e2e6ff);
   border-radius: var(--tk-border-radius, 20px);
   padding: 20px;
@@ -191,45 +191,61 @@ export const STYLESHEET = `
   gap: 12px;
 }
 
-/* Zoom (interim — slider-only rework lands in P5-T04). */
-.tk-zoom { flex-direction: row; align-items: center; gap: 10px; }
-.tk-zoom-in, .tk-zoom-out {
-  background: var(--tk-primary, #a99cdf);
-  color: #ffffff;
-  border: none;
-  border-radius: var(--tk-radius-control, 10px);
-  width: 36px;
-  height: 36px;
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
+/* ── Zoom: slider-only, store .slider-input (docs/13 §5.1, VP-03). ── */
+.tk-slider {
+  --tk-thumb-w: 18px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  transition: background 0.2s;
+  width: 100%;
+  max-width: 320px;
+  align-self: center;
+  position: relative;
+  margin-bottom: 45px; /* room for the tooltip below the track */
 }
-.tk-zoom-in:hover, .tk-zoom-out:hover { background: var(--tk-primary-strong, #8c7ec2); }
-.tk-zoom-in:disabled, .tk-zoom-out:disabled { opacity: 0.4; cursor: default; }
+/* Store tooltip bubble riding the thumb (PetCustomizer.scss .slider-input .tooltip). */
+.tk-slider-tooltip {
+  position: absolute;
+  bottom: -50px;
+  transform: translateX(-50%);
+  background: #ffffff;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  font-size: 14px;
+  padding: 6px 15px;
+  border-radius: 8px;
+  white-space: nowrap;
+  transition: transform 0.1s ease-in-out;
+}
+.tk-slider-tooltip[hidden] { display: none; }
 .tk-zoom-slider {
   -webkit-appearance: none;
   appearance: none;
-  flex: 1;
+  width: 100%;
   height: 8px;
   border-radius: 5px;
   background: transparent;
   outline: none;
   cursor: pointer;
 }
+/* Intended progress fill, cross-browser (I-01): filled = primary over the darker track.
+ * --tk-slider-fill is set by the control from the value. */
 .tk-zoom-slider::-webkit-slider-runnable-track {
   height: 8px;
   border-radius: 5px;
-  background: var(--tk-primary-strong, #8c7ec2);
+  background: linear-gradient(
+    to right,
+    var(--tk-primary, #a99cdf) var(--tk-slider-fill, 0%),
+    var(--tk-primary-strong, #8c7ec2) var(--tk-slider-fill, 0%)
+  );
 }
 .tk-zoom-slider::-moz-range-track {
   height: 8px;
   border-radius: 5px;
-  background: var(--tk-primary-strong, #8c7ec2);
+  background: linear-gradient(
+    to right,
+    var(--tk-primary, #a99cdf) var(--tk-slider-fill, 0%),
+    var(--tk-primary-strong, #8c7ec2) var(--tk-slider-fill, 0%)
+  );
 }
 .tk-zoom-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -360,7 +376,9 @@ export const STYLESHEET = `
   .tk-modal::after { display: none; }
   .tk-body { flex-direction: column; padding: 20px; gap: 20px; }
   .tk-preview, .tk-controls { flex: 0 0 auto; width: 100%; }
-  .tk-zoom, .tk-text, .tk-cutouts { border-radius: var(--tk-radius-control, 10px); }
+  .tk-text, .tk-cutouts { border-radius: var(--tk-radius-control, 10px); }
+  .tk-slider { --tk-thumb-w: 23px; }
+  .tk-zoom-slider { height: 10px; }
   .tk-zoom-slider::-webkit-slider-runnable-track { height: 10px; }
   .tk-zoom-slider::-moz-range-track { height: 10px; }
   .tk-zoom-slider::-webkit-slider-thumb { width: 23px; height: 23px; margin-top: -6px; }

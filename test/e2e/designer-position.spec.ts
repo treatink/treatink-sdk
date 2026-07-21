@@ -3,8 +3,9 @@ import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import type { Treatink } from '../../src/types.js';
 
-// P2-T07: drag moves the photo; zoom controls change scale within [0.5, maxScale]; preview
-// matches the engine composite (re-render observed at the pixel level).
+// P2-T07 (+P5-T04): drag moves the photo; the SLIDER-ONLY zoom (store desktop, VP-03) changes
+// scale within [0.5, maxScale]; the px-dimensions tooltip tracks the value (docs/13 §5.1);
+// preview matches the engine composite (re-render observed at the pixel level).
 
 declare global {
   interface Window {
@@ -36,18 +37,29 @@ test('initial fit lands at the store anchors (x=0, y=132, scale 1)', async ({ pa
   await expect(slider).toHaveAttribute('max', '1.3'); // portrait maxScale
 });
 
-test('zoom buttons step by 0.1 and clamp to [0.5, maxScale]', async ({ page }) => {
-  const zoomIn = page.locator('.tk-zoom-in');
-  const zoomOut = page.locator('.tk-zoom-out');
-  await zoomIn.click();
-  await expect(page.locator('.tk-canvas')).toHaveAttribute('data-scale', '1.1');
-  await zoomIn.click();
-  await zoomIn.click();
+test('zoom is slider-only (store desktop) and clamps to [0.5, maxScale]', async ({ page }) => {
+  // VP-03: the −/+ buttons are gone — the range input is the only zoom control.
+  await expect(page.locator('.tk-zoom-in')).toHaveCount(0);
+  await expect(page.locator('.tk-zoom-out')).toHaveCount(0);
+  const slider = page.locator('.tk-zoom-slider');
+  await slider.fill('1.3'); // ceiling = maxScale
   await expect(page.locator('.tk-canvas')).toHaveAttribute('data-scale', '1.3');
-  await zoomIn.click(); // clamped at maxScale
-  await expect(page.locator('.tk-canvas')).toHaveAttribute('data-scale', '1.3');
-  for (let i = 0; i < 12; i++) await zoomOut.click();
-  await expect(page.locator('.tk-canvas')).toHaveAttribute('data-scale', '0.5'); // floor
+  await slider.fill('0.5'); // floor
+  await expect(page.locator('.tk-canvas')).toHaveAttribute('data-scale', '0.5');
+  // keyboard still zooms (native range arrows — a11y stays without buttons)
+  await slider.focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.locator('.tk-canvas')).toHaveAttribute('data-scale', '0.6');
+});
+
+test('the tooltip shows the scaled px dimensions and tracks the value', async ({ page }) => {
+  // portrait 1536×2048 fit → base box 900×1200 (docs/05 §3); tooltip = box × scale.
+  const tooltip = page.locator('.tk-slider-tooltip');
+  await expect(tooltip).toHaveText('900 x 1200px');
+  await page.locator('.tk-zoom-slider').fill('0.5');
+  await expect(tooltip).toHaveText('450 x 600px');
+  await page.locator('.tk-zoom-slider').fill('1.2');
+  await expect(tooltip).toHaveText('1080 x 1440px');
 });
 
 test('the slider drives scale directly', async ({ page }) => {
