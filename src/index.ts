@@ -12,13 +12,10 @@ import { resolveConfig } from './config.js';
 import { DraftsStore } from './drafts/store.js';
 import { createEventBus, instrumentNamespace } from './events.js';
 import { FixtureTransport, type FixtureOp } from './transport/fixture-transport.js';
+import { HttpTransport } from './transport/http-transport.js';
+import type { Transport } from './transport/transport.js';
 import { TreatinkError } from './types.js';
 import type { Treatink as TreatinkInstance, TreatinkConfig } from './types.js';
-
-/** Stub namespace factory — every method throws until its task fills it (P1-T06+). */
-function notImplemented(area: string): never {
-  throw new TreatinkError('not_implemented', `${area}: not implemented yet in this build`);
-}
 
 export type {
   TreatinkConfig,
@@ -58,36 +55,26 @@ export const Treatink = {
   /** Create an SDK instance. Throws key_scope_violation for non-publishable keys (docs/11 §1). */
   init(config: TreatinkConfig): TreatinkInstance {
     const resolved = resolveConfig(config);
-    // The one backend seam (docs/01 §4). HttpTransport arrives in P4-T01.
-    const fixtureTransport = resolved.mode === 'fixtures' ? new FixtureTransport() : null;
+    // The one backend seam (docs/01 §4): FixtureTransport (bundled sim) or HttpTransport (live),
+    // both behind the `Transport` interface — swapping `mode` swaps the implementation and nothing
+    // above the transport changes. Live catalog is P4-T01; live assets/templates are P4-T02/T03.
+    const transport: Transport =
+      resolved.mode === 'fixtures'
+        ? new FixtureTransport()
+        : new HttpTransport({ apiKey: resolved.apiKey, apiBaseUrl: resolved.apiBaseUrl });
+    // The `fixtures` test namespace exists only when the bundled simulation is active.
+    const fixtureTransport = transport instanceof FixtureTransport ? transport : null;
     const bus = createEventBus();
     // Every TreatinkError surfacing from a public namespace also fires 'error' (docs/10 §2).
     const onError = (error: TreatinkError) => bus.emit('error', error);
     const guard = <T extends object>(api: T): T => instrumentNamespace(api, onError);
     // Reference-only drafts (docs/10 §6); falls back to in-memory outside the browser.
     const draftsStore = new DraftsStore({ channel: resolved.channel });
-    // Namespaces are wired by their tasks (api P1-T08, events P1-T12,
-    // designer P2, drafts P3); until then each stub throws not_implemented on use.
     const tk: TreatinkInstance = {
-      // Live-mode transport is HttpTransport (P4-T01); until then live namespaces stay stubs.
-      products: guard(
-        fixtureTransport
-          ? createProductsApi(fixtureTransport)
-          : {
-              list: () => notImplemented('products.list (live: P4-T01)'),
-              get: () => notImplemented('products.get (live: P4-T01)'),
-            },
-      ),
-      templates: guard(
-        fixtureTransport
-          ? createTemplatesApi(fixtureTransport)
-          : { list: () => notImplemented('templates.list (live: P4-T01)') },
-      ),
-      artwork: guard(
-        fixtureTransport
-          ? createArtworkApi(fixtureTransport)
-          : { upload: () => notImplemented('artwork.upload (live: P4-T01)') },
-      ),
+      // All catalog/artwork namespaces run off the active transport (fixture or http).
+      products: guard(createProductsApi(transport)),
+      templates: guard(createTemplatesApi(transport)),
+      artwork: guard(createArtworkApi(transport)),
       // The designer is a LAZY chunk — pulled on first open() to keep the loader tiny (docs/06 §2).
       designer: {
         open: (options) => {
@@ -99,24 +86,11 @@ export const Treatink = {
                   theme: resolved.theme,
                   emit: (event, payload) => bus.emit(event, payload),
                   maxPersonalizationLength: resolved.maxPersonalizationLength,
-                  listTemplates: (params) =>
-                    fixtureTransport
-                      ? fixtureTransport.listTemplates(params)
-                      : Promise.reject(
-                          new TreatinkError('bad_request', 'live templates arrive with P4-T01'),
-                        ),
-                  getProduct: (sku) =>
-                    fixtureTransport
-                      ? fixtureTransport.getProduct(sku)
-                      : Promise.reject(
-                          new TreatinkError('bad_request', 'live catalog arrives with P4-T01'),
-                        ),
-                  uploadArtwork: (input) =>
-                    fixtureTransport
-                      ? createArtworkApi(fixtureTransport).upload(input)
-                      : Promise.reject(
-                          new TreatinkError('bad_request', 'live uploads arrive with P4-T01'),
-                        ),
+                  // Off the active transport: live catalog works (P4-T01); live templates/uploads
+                  // reject with their parked notice until P4-T03/T02 wire them.
+                  listTemplates: (params) => transport.listTemplates(params),
+                  getProduct: (sku) => transport.getProduct(sku),
+                  uploadArtwork: (input) => createArtworkApi(transport).upload(input),
                   // Written ONLY after a successful save; emits draft:saved (docs/10 §2).
                   saveDraft: (result) => {
                     const now = new Date().toISOString();
