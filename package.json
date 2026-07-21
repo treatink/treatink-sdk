@@ -34,6 +34,8 @@
     "test:watch": "vitest",
     "test:golden": "vitest run test/golden",
     "harness": "npm run build && node scripts/harness.mjs",
+    "demo": "npm run harness",
+    "dev": "npm run build && node scripts/harness.mjs --dev",
     "test:e2e": "playwright test --pass-with-no-tests",
     "test:a11y": "playwright test designer-a11y --pass-with-no-tests",
     "size": "node scripts/size.mjs",

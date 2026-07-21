@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Riley's Pets — Personalized Treats</title>
+    <style>
+      :root {
+        --ink: #1f2430;
+        --muted: #6b7280;
+        --line: #e7e3dd;
+        --paper: #fbf8f4;
+        --card: #ffffff;
+        --brand: #ec6f27;
+        --brand-dark: #d65f1c;
+        --accent: #5b6cff;
+        --ok: #1f9d55;
+        --shadow: 0 1px 2px rgba(20, 24, 40, 0.06), 0 8px 24px rgba(20, 24, 40, 0.06);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+      }
+      body {
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+        color: var(--ink);
+        background: var(--paper);
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
+      a {
+        color: inherit;
+      }
+
+      /* Header */
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 14px 24px;
+        background: rgba(251, 248, 244, 0.85);
+        backdrop-filter: saturate(1.4) blur(8px);
+        border-bottom: 1px solid var(--line);
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 800;
+        font-size: 20px;
+        letter-spacing: -0.02em;
+      }
+      .logo .mark {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--brand), #f7a35b);
+        display: grid;
+        place-items: center;
+        font-size: 19px;
+      }
+      .logo small {
+        color: var(--brand);
+      }
+      nav {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 500;
+      }
+      nav a {
+        text-decoration: none;
+      }
+      nav a:hover {
+        color: var(--ink);
+      }
+      .cart-btn {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 16px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--card);
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        box-shadow: var(--shadow);
+      }
+      .cart-btn:hover {
+        border-color: #d9d3ca;
+      }
+      .cart-count {
+        min-width: 20px;
+        height: 20px;
+        padding: 0 6px;
+        border-radius: 999px;
+        background: var(--brand);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        display: grid;
+        place-items: center;
+      }
+
+      /* Hero */
+      .hero {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 40px 24px 8px;
+      }
+      .hero .eyebrow {
+        color: var(--brand);
+        font-weight: 700;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .hero h1 {
+        font-size: clamp(30px, 5vw, 46px);
+        line-height: 1.05;
+        letter-spacing: -0.03em;
+        margin: 10px 0 8px;
+        max-width: 16ch;
+      }
+      .hero p {
+        color: var(--muted);
+        font-size: 17px;
+        max-width: 52ch;
+        margin: 0;
+      }
+      .badge-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 18px;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #4b5563;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 7px 13px;
+      }
+
+      /* Product grid */
+      main {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 28px 24px 80px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 22px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: var(--shadow);
+        transition:
+          transform 0.15s ease,
+          box-shadow 0.15s ease;
+      }
+      .card:hover {
+        transform: translateY(-3px);
+        box-shadow:
+          0 2px 4px rgba(20, 24, 40, 0.06),
+          0 16px 36px rgba(20, 24, 40, 0.1);
+      }
+      .thumb {
+        position: relative;
+        aspect-ratio: 1 / 1;
+        background: #f3efe9;
+        overflow: hidden;
+      }
+      .thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .tag {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: capitalize;
+        background: rgba(31, 36, 48, 0.72);
+        color: #fff;
+        padding: 4px 9px;
+        border-radius: 999px;
+        backdrop-filter: blur(4px);
+      }
+      .personalized-flag {
+        position: absolute;
+        inset: 0;
+        display: none;
+        align-items: flex-end;
+        justify-content: flex-start;
+        padding: 10px;
+        background: linear-gradient(to top, rgba(31, 157, 85, 0.2), transparent 55%);
+      }
+      .personalized-flag span {
+        background: var(--ok);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 4px 9px;
+        border-radius: 999px;
+        display: inline-flex;
+        gap: 5px;
+        align-items: center;
+      }
+      .card.is-personalized .personalized-flag {
+        display: flex;
+      }
+      .card-body {
+        padding: 14px 15px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex: 1;
+      }
+      .card h3 {
+        font-size: 15px;
+        margin: 0;
+        line-height: 1.3;
+        letter-spacing: -0.01em;
+      }
+      .sku {
+        font-size: 12px;
+        color: #9ca3af;
+        font-variant-numeric: tabular-nums;
+      }
+      .price {
+        font-weight: 700;
+        font-size: 16px;
+        margin-top: 2px;
+      }
+      .btn {
+        margin-top: 12px;
+        width: 100%;
+        border: 0;
+        border-radius: 10px;
+        padding: 11px 14px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        font-family: inherit;
+        background: var(--brand);
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: background 0.15s ease;
+      }
+      .btn:hover {
+        background: var(--brand-dark);
+      }
+      .btn.secondary {
+        background: #fff;
+        color: var(--ink);
+        border: 1px solid var(--line);
+      }
+      .btn.secondary:hover {
+        background: #f7f4ef;
+      }
+
+      .loading {
+        color: var(--muted);
+        font-size: 15px;
+        padding: 40px 0;
+      }
+
+      /* Cart drawer */
+      .scrim {
+        position: fixed;
+        inset: 0;
+        background: rgba(20, 24, 40, 0.42);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+        z-index: 30;
+      }
+      .scrim.open {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .drawer {
+        position: fixed;
+        top: 0;
+        right: 0;
+        height: 100%;
+        width: min(420px, 92vw);
+        background: var(--paper);
+        z-index: 40;
+        box-shadow: -12px 0 40px rgba(20, 24, 40, 0.18);
+        transform: translateX(100%);
+        transition: transform 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+      }
+      .drawer.open {
+        transform: translateX(0);
+      }
+      .drawer header {
+        position: static;
+        background: none;
+        backdrop-filter: none;
+        border-bottom: 1px solid var(--line);
+      }
+      .drawer header h2 {
+        margin: 0;
+        font-size: 18px;
+      }
+      .icon-btn {
+        margin-left: auto;
+        border: 0;
+        background: none;
+        font-size: 22px;
+        cursor: pointer;
+        color: var(--muted);
+        line-height: 1;
+      }
+      .cart-items {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px 20px;
+      }
+      .cart-empty {
+        color: var(--muted);
+        text-align: center;
+        padding: 60px 20px;
+      }
+      .line {
+        display: flex;
+        gap: 12px;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .line img {
+        width: 68px;
+        height: 68px;
+        border-radius: 10px;
+        object-fit: cover;
+        background: #eee;
+        border: 1px solid var(--line);
+      }
+      .line .meta {
+        flex: 1;
+        min-width: 0;
+      }
+      .line .meta h4 {
+        margin: 0 0 2px;
+        font-size: 14px;
+      }
+      .line .draft {
+        font-size: 11px;
+        color: #9ca3af;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        word-break: break-all;
+      }
+      .line .lowres {
+        color: #b45309;
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .line .rm {
+        border: 0;
+        background: none;
+        color: #b91c1c;
+        font-size: 12px;
+        cursor: pointer;
+        padding: 4px 0;
+      }
+      .drawer footer {
+        padding: 18px 20px;
+        border-top: 1px solid var(--line);
+        background: var(--card);
+      }
+      .total {
+        display: flex;
+        justify-content: space-between;
+        font-weight: 700;
+        font-size: 17px;
+        margin-bottom: 12px;
+      }
+
+      /* Order payload panel */
+      .payload {
+        padding: 0 20px 20px;
+      }
+      .payload h3 {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+        margin: 18px 0 8px;
+      }
+      pre {
+        margin: 0;
+        background: #1b2130;
+        color: #d7e0f0;
+        border-radius: 12px;
+        padding: 14px;
+        font-size: 11.5px;
+        line-height: 1.5;
+        overflow: auto;
+        max-height: 320px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      pre .k {
+        color: #7dd3fc;
+      }
+      pre .s {
+        color: #a7f3d0;
+      }
+      pre .n {
+        color: #fcd34d;
+      }
+
+      footer.site {
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 13px;
+        text-align: center;
+        padding: 24px;
+      }
+      footer.site code {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 2px 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="logo"><span class="mark">🐾</span> TreatInk<small>SDK</small></div>
+      <nav>
+        <button class="cart-btn" id="open-cart">
+          🛒 Cart <span class="cart-count" id="cart-count">0</span>
+        </button>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div class="eyebrow" id="eyebrow">Powered by @treatink/sdk</div>
+      <h1>Treats worth wagging about — now with your pet on the pack.</h1>
+      <p>
+        Pick a treat, add your favorite photo, choose a frame, and we'll print a one-of-a-kind
+        label. Personalization happens right here on the page.
+      </p>
+      <div class="badge-row">
+        <span class="pill">🖼️ In-page photo designer</span>
+        <span class="pill">🔒 Photos never leave your browser in this demo</span>
+        <span class="pill">⚡ Fixtures mode — no network</span>
+      </div>
+    </section>
+
+    <main>
+      <div class="grid" id="grid"><div class="loading">Loading catalog from the SDK…</div></div>
+    </main>
+
+    <footer class="site">
+      Demo storefront · <code>@treatink/sdk</code> in <code>mode: 'fixtures'</code> · every product,
+      price, image, frame and order payload below comes from the real SDK running locally.
+    </footer>
+
+    <!-- Cart drawer -->
+    <div class="scrim" id="scrim"></div>
+    <aside class="drawer" id="drawer" aria-hidden="true">
+      <header>
+        <h2>Your Cart</h2>
+        <button class="icon-btn" id="close-cart" aria-label="Close cart">×</button>
+      </header>
+      <div class="cart-items" id="cart-items">
+        <div class="cart-empty">Your cart is empty.<br />Personalize a treat to get started.</div>
+      </div>
+      <div class="payload" id="payload-panel" style="display: none">
+        <h3>Order payload · orders.buildPayload()</h3>
+        <pre id="payload"></pre>
+      </div>
+      <footer>
+        <div class="total"><span>Total</span><span id="total">$0.00</span></div>
+        <button class="btn" id="checkout" disabled>Assemble order payload →</button>
+      </footer>
+    </aside>
+
+    <script type="module">
+      import { Treatink } from '/dist/index.js';
+
+      // ---- 1. Init the SDK, themed to the Riley's Pets brand -------------------------------------
+      // The SAME page serves fixtures now and staging later. Config resolves in this order:
+      //   1. demo/demo.config.js   — gitignored local file (the browser's "env"; copy from the
+      //                              committed demo.config.example.js). Best place for a staging key.
+      //   2. URL params            — ?mode=live&apiBaseUrl=…  (handy for a quick one-off switch)
+      //   3. prompt fallback       — only if live mode is requested with no key configured.
+      // Publishable keys (pk_test_/pk_live_) are safe in client code BY DESIGN — that's the whole
+      // point of the publishable/secret split. The SECRET sk_ key never appears here; it lives in
+      // your SERVER's env for order submission. This page runs on origin http://localhost:5199,
+      // the origin registered on the storage-bucket CORS list.
+      const cfg = await import('./demo.config.js').then((m) => m.default ?? m).catch(() => ({})); // no local config → fixtures defaults
+      const params = new URLSearchParams(location.search);
+      const mode = (params.get('mode') ?? cfg.mode) === 'live' ? 'live' : 'fixtures';
+      const apiBaseUrl = params.get('apiBaseUrl') || cfg.apiBaseUrl || undefined;
+
+      let apiKey = cfg.apiKey || 'pk_test_rileys_demo'; // fixtures: any pk_ key works, stays local
+      if (mode === 'live' && !cfg.apiKey) {
+        apiKey =
+          sessionStorage.getItem('tk_demo_key') ||
+          window.prompt('Live mode — paste a publishable key (pk_test_… or pk_live_…):') ||
+          '';
+        if (apiKey) sessionStorage.setItem('tk_demo_key', apiKey);
+      }
+
+      const tk = Treatink.init({
+        apiKey,
+        channel: 'rileyspets.com',
+        mode,
+        ...(apiBaseUrl ? { apiBaseUrl } : {}),
+        theme: {
+          primary: '#ec6f27',
+          accent: '#5b6cff',
+          headerBackground: '#ec6f27',
+          borderRadius: '14px',
+        },
+        copy: { headerTitle: 'Personalize your treat' },
+      });
+      window.tk = tk; // handy for poking at the SDK in devtools
+
+      // Surface the active mode in the hero so it's never ambiguous which backend you're hitting.
+      document.getElementById('eyebrow').textContent =
+        mode === 'live'
+          ? `LIVE · ${apiBaseUrl || 'api.treatink.com'}`
+          : 'Powered by @treatink/sdk · fixtures mode';
+
+      const fmt = (cents, cur = 'USD') =>
+        new Intl.NumberFormat('en-US', { style: 'currency', currency: cur }).format(cents / 100);
+
+      // ---- 2. Cart state --------------------------------------------------------------------------
+      const cart = new Map(); // sku -> line
+      const el = (id) => document.getElementById(id);
+
+      function renderCart() {
+        const items = [...cart.values()];
+        el('cart-count').textContent = items.length;
+        el('checkout').disabled = items.length === 0;
+        el('cart-items').innerHTML =
+          items.length === 0
+            ? `<div class="cart-empty">Your cart is empty.<br />Personalize a treat to get started.</div>`
+            : items
+                .map(
+                  (l) => `
+          <div class="line">
+            <img src="${l.previewUrl}" alt="Preview of personalized ${l.title}" />
+            <div class="meta">
+              <h4>${l.title}</h4>
+              <div class="sku">${l.sku} · ${fmt(l.priceCents, l.currency)}</div>
+              ${l.lowRes ? '<div class="lowres">⚠︎ Low-resolution photo</div>' : ''}
+              <div class="draft">draft ${l.draftId}</div>
+              <button class="rm" data-sku="${l.sku}">Remove</button>
+            </div>
+          </div>`,
+                )
+                .join('');
+        const total = items.reduce((s, l) => s + l.priceCents, 0);
+        el('total').textContent = fmt(total);
+        if (items.length === 0) el('payload-panel').style.display = 'none';
+        for (const b of el('cart-items').querySelectorAll('.rm')) {
+          b.addEventListener('click', () => {
+            cart.delete(b.dataset.sku);
+            document
+              .querySelector(`.card[data-sku="${b.dataset.sku}"]`)
+              ?.classList.remove('is-personalized');
+            renderCart();
+          });
+        }
+      }
+
+      function openCart(open) {
+        el('drawer').classList.toggle('open', open);
+        el('scrim').classList.toggle('open', open);
+        el('drawer').setAttribute('aria-hidden', String(!open));
+      }
+      el('open-cart').addEventListener('click', () => openCart(true));
+      el('close-cart').addEventListener('click', () => openCart(false));
+      el('scrim').addEventListener('click', () => openCart(false));
+
+      // ---- 3. Render the catalog from the SDK's products API --------------------------------------
+      let page;
+      try {
+        page = await tk.products.list({ limit: 50 });
+      } catch (err) {
+        el('grid').innerHTML = `<div class="loading">Couldn't load the catalog${
+          mode === 'live' ? ` from ${apiBaseUrl || 'the live API'}` : ''
+        }.<br /><strong>${err.code || err.name}</strong>: ${err.message}${
+          mode === 'live'
+            ? '<br /><br />In live mode this is expected until staging keys + endpoints are wired. Drop <code>?mode=live</code> from the URL to run against fixtures.'
+            : ''
+        }</div>`;
+        throw err;
+      }
+      // De-dupe by sku (fixtures include variant rows) and keep those with a printable label zone.
+      const seen = new Set();
+      const products = page.data.filter((p) => p.labelZone && !seen.has(p.sku) && seen.add(p.sku));
+
+      el('grid').innerHTML = products
+        .map(
+          (p) => `
+        <article class="card" data-sku="${p.sku}">
+          <div class="thumb">
+            <img src="${p.images.catalogImageUrl}" alt="${p.title}" loading="lazy" />
+            ${p.animalType ? `<span class="tag">${p.animalType}</span>` : ''}
+            <div class="personalized-flag"><span>✓ Personalized</span></div>
+          </div>
+          <div class="card-body">
+            <h3>${p.title}</h3>
+            <div class="sku">${p.sku}</div>
+            <div class="price">${fmt(p.priceCents, p.currency)}</div>
+            <button class="btn" data-sku="${p.sku}">🖼️ Personalize</button>
+          </div>
+        </article>`,
+        )
+        .join('');
+
+      // ---- 4. Wire "Personalize" → the modal designer --------------------------------------------
+      const bySku = new Map(products.map((p) => [p.sku, p]));
+      for (const btn of el('grid').querySelectorAll('.btn')) {
+        btn.addEventListener('click', () => {
+          const product = bySku.get(btn.dataset.sku);
+          tk.designer.open({
+            sku: product.sku,
+            onComplete(result) {
+              // Shopper saved a design. Keep draftId (line-item ref) + previewUrl (local thumbnail).
+              cart.set(product.sku, {
+                sku: product.sku,
+                title: product.title,
+                priceCents: product.priceCents,
+                currency: product.currency,
+                draftId: result.draftId,
+                previewUrl: result.previewUrl,
+                lowRes: result.lowRes,
+              });
+              document
+                .querySelector(`.card[data-sku="${product.sku}"]`)
+                ?.classList.add('is-personalized');
+              renderCart();
+              openCart(true);
+            },
+            onError(err) {
+              console.error('[designer error]', err.code, err.message);
+              alert(`Something went wrong: ${err.code}`);
+            },
+          });
+        });
+      }
+
+      // ---- 5. Checkout → assemble the real order payload via the SDK -----------------------------
+      const highlight = (json) =>
+        json
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/"([^"]+)":/g, '<span class="k">"$1"</span>:')
+          .replace(/: "([^"]*)"/g, ': <span class="s">"$1"</span>')
+          .replace(/: (\d+)/g, ': <span class="n">$1</span>');
+
+      el('checkout').addEventListener('click', () => {
+        const lines = [...cart.values()].map((l, i) => ({
+          externalLineItemId: `line_${i + 1}`,
+          draftId: l.draftId,
+          quantity: 1,
+          unitPriceCents: l.priceCents,
+        }));
+        const payload = tk.orders.buildPayload({
+          externalOrderId: 'demo_order_0001',
+          currency: 'USD',
+          paymentStatus: 'paid',
+          customer: { email: 'shopper@example.com', firstName: 'Sam', lastName: 'Rivera' },
+          shippingAddress: {
+            name: 'Sam Rivera',
+            address1: '123 Bark Lane',
+            city: 'Austin',
+            state: 'TX',
+            postalCode: '78701',
+            countryCode: 'US',
+          },
+          lines,
+        });
+        el('payload').innerHTML = highlight(JSON.stringify(payload, null, 2));
+        el('payload-panel').style.display = 'block';
+        el('payload-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+
+      // ---- 6. Observe SDK events (what a partner would log/analytics-track) ----------------------
+      for (const ev of ['designer:open', 'designer:close', 'draft:saved', 'error']) {
+        tk.on(ev, (payload) => console.log(`[tk] ${ev}`, payload));
+      }
+
+      renderCart();
+    </script>
+  </body>
+</html>
