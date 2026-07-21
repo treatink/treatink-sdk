@@ -27,7 +27,7 @@ gate passed, not blocked.
 | P2 Designer | **done** ✅ | P1 exit green ✅ | exit gate green 2026-07-20 (135 e2e + 15 a11y; budgets hold) |
 | P3 Save Path | **done** ✅ | P2 exit green ✅ | exit gate green 2026-07-21 (verify + 189 e2e + no-secret) |
 | P4 Live & Pilot | todo | P3 exit green ✅ | live smoke green **or** blockers parked; published |
-| P5 Visual Parity | todo | verify green on main ✅ | full sweep green + harness eyeball vs store (`phases/05`) |
+| P5 Visual Parity | **done** ✅ (machine gates) | verify green on main ✅ | full sweep green 2026-07-21 (162 unit + 41 golden + 234 e2e + a11y + budgets + no-secret); harness eyeball vs store = human checkpoint |
 
 ## Task ledger
 
@@ -97,7 +97,7 @@ gate passed, not blocked.
 | P5-T06 | done | P5-T02 | Pet-name card (native checkbox + pill input) |
 | P5-T07 | done | P5-T02 | Cutout browser (chips, 3-up pager + dots, layered thumbs, auto-preselect) |
 | P5-T08 | done | P5-T07 | Browse-All modal + search |
-| P5-T09 | in_progress | P5-T03, P5-T05, P5-T06, P5-T07, P5-T08 | Save row + full-parity sweep |
+| P5-T09 | done | P5-T03, P5-T05, P5-T06, P5-T07, P5-T08 | Save row + full-parity sweep |
 
 ---
 
@@ -199,3 +199,5 @@ _Newest last. One line per completed task or phase transition:_
 - P5-T06 done — test:e2e designer-text green (15 tests, 3 browsers)
 - P5-T07 done — cutouts+save-local e2e green (42 tests, 3 browsers) + size (chunk 18/150 KB)
 - P5-T08 done — cutouts e2e (36) + a11y (15) green, 3 browsers; chunk 19.4/150 KB — 83fae18
+- P5-T09 done — save CTA + sweep: 162 unit + 41 golden + 234 e2e (3 browsers) + a11y + size + no-secret — f21d5f6
+- Phase P5 complete — machine exit gate green; remaining: human harness eyeball vs the live store
