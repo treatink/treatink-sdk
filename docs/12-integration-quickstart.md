@@ -142,6 +142,22 @@ Content-Security-Policy:
 `async`/`defer` are safe; the SDK never calls `document.write`. Confirm `<storage-host>` with the
 backend before publishing (their concern — GP-02).
 
+### 5.1 Privacy disclosure (Charter §9)
+
+Include this in your storefront's privacy notice — it reflects exactly how the SDK handles a
+shopper's photo:
+
+- **Where photos go.** The photo a shopper selects is uploaded **only to Treatink infrastructure**
+  (the API host and its presigned storage host) over TLS, and **only at save time** — nothing is
+  sent while they are still editing.
+- **No third-party requests.** The SDK makes **no** calls to analytics, trackers, external fonts, or
+  any other origin. The only network destinations are the hosts in the CSP above. This is enforced
+  by an e2e gate (`test:e2e -- no-third-party`) on every build.
+- **No image bytes stored on the device.** Drafts saved to `localStorage` hold **references only**
+  (asset ids, layout metadata) — never the photo bytes, never a `blob:`/`data:` URL (`docs/10` §6).
+- **Shared-device cleanup.** Call `tk.drafts.clear()` to remove all saved draft references (e.g. on
+  a kiosk or shared computer). Deleting a draft never touches already-submitted orders.
+
 ## 6. Theming & copy
 
 Pass `theme` and `copy` to `Treatink.init` — both are fully overridable (`docs/10` §8,
