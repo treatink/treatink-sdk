@@ -61,6 +61,13 @@ test('drag-and-drop path loads the photo too', async ({ page }) => {
 test('EXIF orientation 6 photo displays upright (600×800 portrait, not 800×600)', async ({
   page,
 }) => {
+  // Re-open with the full-width-opening frame (cut_fx_00000030: safe transparent rect x∈[62,900),
+  // y∈[362,1200)) so the edge probes below see the PHOTO, not the auto-preselected default frame.
+  await page.evaluate(() => {
+    window.tk.designer.close();
+    window.tk.designer.open({ sku: 'SSGTTBC', cutoutLabelId: 'cut_fx_00000030' });
+  });
+  await expect(page.locator('.tk-canvas')).toHaveAttribute('data-cutout', 'cut_fx_00000030');
   await page.setInputFiles('.tk-file-input', join(ASSETS, 'exif-rotated.jpg'));
   await expect(page.locator('.tk-canvas')).toHaveAttribute('data-natural-width', '600');
   await expect(page.locator('.tk-canvas')).toHaveAttribute('data-natural-height', '800');
@@ -69,7 +76,7 @@ test('EXIF orientation 6 photo displays upright (600×800 portrait, not 800×600
   const edges = await page.evaluate(() => {
     const ctx = document.querySelector<HTMLCanvasElement>('.tk-canvas')!.getContext('2d')!;
     const right = ctx.getImageData(880, 600, 1, 1).data;
-    const left = ctx.getImageData(20, 600, 1, 1).data;
+    const left = ctx.getImageData(70, 600, 1, 1).data; // inside the frame's transparent opening
     return { right: { r: right[0], g: right[1] }, left: { r: left[0], b: left[2] } };
   });
   expect(edges.right.r!).toBeGreaterThan(180); // red band rotated onto the right edge

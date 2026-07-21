@@ -559,7 +559,7 @@ export const STYLESHEET = `
 }
 .tk-text-input:focus { outline: 2px solid var(--tk-primary, #a99cdf); }
 
-/* Save CTA (store Button filled primary — full parity in P5-T09). */
+/* Save CTA: store Button filled primary (docs/13 §5.4, Button.scss .default-btn). */
 .tk-save-button {
   width: 100%;
   display: flex;
@@ -577,6 +577,7 @@ export const STYLESHEET = `
 }
 .tk-save-button:hover:not(:disabled) { background: var(--tk-accent-hover, #dd9133); }
 .tk-save-button:disabled { opacity: 0.3; cursor: default; }
+.tk-save-button svg[hidden] { display: none; } /* arrow hides while saving (store) */
 .tk-save-error { color: #b3261e; margin-top: 8px; font-size: 14px; }
 
 .tk-visually-hidden {
@@ -597,6 +598,7 @@ export const STYLESHEET = `
   .tk-body { flex-direction: column; padding: 20px; gap: 20px; }
   .tk-preview, .tk-controls { flex: 0 0 auto; width: 100%; }
   .tk-image-controls, .tk-text, .tk-cutouts { border-radius: var(--tk-radius-control, 10px); }
+  .tk-save-button { padding: 10px 15px; } /* store default-btn mobile padding */
   .tk-slider { --tk-thumb-w: 23px; }
   .tk-zoom-slider { height: 10px; }
   .tk-zoom-slider::-webkit-slider-runnable-track { height: 10px; }

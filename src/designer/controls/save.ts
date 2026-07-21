@@ -1,10 +1,12 @@
+import { createIcon } from '../icons.js';
 import { TreatinkError } from '../../types.js';
 import type { CopyStrings } from '../../types.js';
 
 /**
- * Save CTA (P2-T11): in-flight + error states; success is signalled by the designer closing.
- * P2 saves locally (composite → onComplete); the real upload-on-save pipeline lands in P3-T01,
- * and the full failure/retry UX in P3-T02 — this control already re-enables for retry.
+ * Save CTA (P2-T11 → P5-T09, docs/13 §5.4): the store's filled-orange Button — label left,
+ * ArrowRight 30px on the right (justify-between); while saving the label swaps to savingLabel and
+ * the arrow hides (store PetCustomizer.jsx:589-602). In-flight + error states; success is
+ * signalled by the designer closing; the control re-enables for retry.
  */
 
 export interface SaveHooks {
@@ -29,8 +31,12 @@ export function mountSave(
   const button = doc.createElement('button');
   button.type = 'button';
   button.className = 'tk-save-button';
-  button.textContent = copy.saveButton;
   button.disabled = true;
+  const label = doc.createElement('span');
+  label.className = 'tk-save-label';
+  label.textContent = copy.saveButton;
+  const arrow = createIcon(doc, 'arrow-right', 30); // store: <ArrowRight size={30} />
+  button.append(label, arrow);
 
   const error = doc.createElement('p');
   error.className = 'tk-save-error';
@@ -39,7 +45,8 @@ export function mountSave(
 
   button.addEventListener('click', () => {
     button.disabled = true;
-    button.textContent = copy.savingLabel;
+    label.textContent = copy.savingLabel;
+    arrow.setAttribute('hidden', ''); // store hides the arrow while submitting
     error.hidden = true;
     hooks
       .onSave()
@@ -53,7 +60,8 @@ export function mountSave(
         hooks.onError(err);
       })
       .finally(() => {
-        button.textContent = copy.saveButton;
+        label.textContent = copy.saveButton;
+        arrow.removeAttribute('hidden');
         button.disabled = false;
       });
   });

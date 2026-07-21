@@ -70,14 +70,16 @@ test('the slider drives scale directly', async ({ page }) => {
 test('zooming out re-renders the composite (corner empties as the photo shrinks)', async ({
   page,
 }) => {
+  // (150,350) is inside the default frame's all-transparent opening (safe rect x∈[127,776),
+  // y∈[307,948)) — covered by the photo at scale 1, outside the 450×600 box at scale 0.5.
   const cornerAlpha = () =>
     page.evaluate(() => {
       const canvas = document.querySelector<HTMLCanvasElement>('.tk-canvas')!;
-      return canvas.getContext('2d')!.getImageData(50, 200, 1, 1).data[3]!;
+      return canvas.getContext('2d')!.getImageData(150, 350, 1, 1).data[3]!;
     });
   expect(await cornerAlpha()).toBeGreaterThan(0); // covered at scale 1
   await page.locator('.tk-zoom-slider').fill('0.5');
-  expect(await cornerAlpha()).toBe(0); // photo shrank about its center — corner now empty
+  expect(await cornerAlpha()).toBe(0); // photo shrank about its center — the point is now empty
 });
 
 test('drag pans the photo freeform (no clamping)', async ({ page }) => {
@@ -105,23 +107,21 @@ test('drag pans the photo freeform (no clamping)', async ({ page }) => {
 test('rotate buttons accumulate ±15° and re-render the composite (VP-02)', async ({ page }) => {
   // Card is visible with a photo (store: images.length > 0), buttons labeled (I-06).
   await expect(page.locator('.tk-image-controls')).toBeVisible();
-  // (5,140) sits just under the unrotated top edge (y=132) — covered at rotation 0.
-  const alphaAt = () =>
-    page.evaluate(() => {
-      const canvas = document.querySelector<HTMLCanvasElement>('.tk-canvas')!;
-      return canvas.getContext('2d')!.getImageData(5, 140, 1, 1).data[3]!;
-    });
-  expect(await alphaAt()).toBeGreaterThan(0);
+  // Pixel-level parity of the rotated render is locked by the portrait-rotate-15 golden (store
+  // renderer baseline); here we assert the live composite actually changes with the rotation.
+  const snapshot = () =>
+    page.evaluate(() => document.querySelector<HTMLCanvasElement>('.tk-canvas')!.toDataURL());
+  const before = await snapshot();
   await page.click('.tk-rotate-right');
   await expect(page.locator('.tk-canvas')).toHaveAttribute('data-rotation', '15');
+  expect(await snapshot()).not.toBe(before); // re-rendered, tilted
   await page.click('.tk-rotate-right');
   await expect(page.locator('.tk-canvas')).toHaveAttribute('data-rotation', '30');
   await page.click('.tk-rotate-left');
   await page.click('.tk-rotate-left');
   await page.click('.tk-rotate-left');
   await expect(page.locator('.tk-canvas')).toHaveAttribute('data-rotation', '-15');
-  // at −15° the photo's top-left corner swings down to y≈269 — (5,140) is now outside the photo
-  expect(await alphaAt()).toBe(0);
+  expect(await snapshot()).not.toBe(before); // −15° differs from 0° too
 });
 
 test('delete returns to the empty state: overlay back, card hidden, slider disabled', async ({

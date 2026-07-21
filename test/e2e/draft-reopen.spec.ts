@@ -61,9 +61,9 @@ test('re-open restores cutout, text, and (via photo re-select) the transform', a
   await expect(page.locator('.tk-canvas')).toHaveAttribute('data-cutout', 'cut_fx_00000005');
   await expect(page.locator('.tk-text-checkbox')).toBeChecked();
   await expect(page.locator('.tk-text-input')).toHaveValue('Milo');
-  // the photo is NOT auto-restored — the dropzone prompts for re-selection
+  // the photo is NOT auto-restored — the on-canvas upload overlay prompts for re-selection
   await expect(page.locator('.tk-canvas')).not.toHaveAttribute('data-natural-width', /.+/);
-  await expect(page.locator('.tk-dropzone')).toBeVisible();
+  await expect(page.locator('.tk-upload-overlay')).toBeVisible();
   await expect(page.locator('.tk-save-button')).toBeDisabled(); // no photo yet
 
   // re-selecting the photo applies the DRAFT transform, not the initial fit
