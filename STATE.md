@@ -90,7 +90,7 @@ gate passed, not blocked.
 | ID | Status | depends_on | Title |
 |---|---|---|---|
 | P5-T01 | done | — | Theme tokens + copy surface (store palette defaults) |
-| P5-T02 | todo | P5-T01 | Modal shell & layout (white card, 50/50, wave, 700px) |
+| P5-T02 | done | P5-T01 | Modal shell & layout (white card, 50/50, wave, 700px) |
 | P5-T03 | todo | P5-T02 | Canvas area + upload overlay (dropzone card removed) |
 | P5-T04 | todo | P5-T02 | Slider-only zoom + px tooltip (−/+ buttons removed) |
 | P5-T05 | todo | P5-T03, P5-T04 | Image-controls card (rotate ±15° + delete + slider) |
@@ -192,3 +192,4 @@ _Newest last. One line per completed task or phase transition:_
   (PetCustomizer.jsx, API mode); owner decisions 2026-07-21: store palette = defaults, rotation IN,
   slider-only zoom, header kept, no pet-type
 - P5-T01 done — typecheck + config(15)+theme(6) unit + lint green; full suite 159
+- P5-T02 done — test:e2e designer-shell+designer-theming green (27 tests, 3 browsers) + size — 94a5e65
