@@ -8,11 +8,10 @@ Start with the first **runnable** task (`docs/03` §3): `todo`, all `depends_on`
 gate passed, not blocked.
 
 - **Project:** `@treatink/sdk` MVP (native modal + publishable-key client, fixtures-first)
-- **Current phase:** P4 · Live & Pilot (entry gate: P3 exit green → ✅)
-- **Next runnable:** none fully autonomous. `P4-T05` (API-docs update pass) has a **human-verified**
-  checklist gate; `P4-T07` (publish + pilot) needs live CDN/deploy credentials; `P4-T02/T03/T04` are
-  parked/expected blockers (staging, live templates endpoint, CORS policy — all API-team/infra).
-  All offline machine-gated tasks are **done**. → Loop should stop and surface to the human.
+- **Current phase:** **P5 · Visual Parity** (owner-directed 2026-07-21; spec `docs/13`, plan
+  `phases/05-visual-parity.md`). P4 remains parked on backend/infra + human go-live as recorded
+  below — P5 takes priority and is fully offline/machine-gated.
+- **Next runnable:** `P5-T01` (theme tokens + copy surface).
 - **RETRY_BUDGET:** 3 per task
 - **Scaffold:** repo skeleton laid down (pinned toolchain + `src/` architecture + typed stubs +
   test/fixtures structure). P1-T01/T03 are now *verify* tasks, not *create* tasks. Stubs throw
@@ -28,6 +27,7 @@ gate passed, not blocked.
 | P2 Designer | **done** ✅ | P1 exit green ✅ | exit gate green 2026-07-20 (135 e2e + 15 a11y; budgets hold) |
 | P3 Save Path | **done** ✅ | P2 exit green ✅ | exit gate green 2026-07-21 (verify + 189 e2e + no-secret) |
 | P4 Live & Pilot | todo | P3 exit green ✅ | live smoke green **or** blockers parked; published |
+| P5 Visual Parity | todo | verify green on main ✅ | full sweep green + harness eyeball vs store (`phases/05`) |
 
 ## Task ledger
 
@@ -85,6 +85,19 @@ gate passed, not blocked.
 | P4-T06 | done | P4-T01 | SRI + CSP + privacy guidance | |
 | P4-T07 | todo | P4-T01, P4-T06 | Publish + Riley's pilot | may run hybrid if T02–T04 parked |
 | P4-T08 | done | P4-T06 | Release pipeline (GP-15) | dry-run gate; real publish is human go-live |
+
+### P5 · Visual Parity (spec: `docs/13-visual-parity.md`)
+| ID | Status | depends_on | Title |
+|---|---|---|---|
+| P5-T01 | done | — | Theme tokens + copy surface (store palette defaults) |
+| P5-T02 | todo | P5-T01 | Modal shell & layout (white card, 50/50, wave, 700px) |
+| P5-T03 | todo | P5-T02 | Canvas area + upload overlay (dropzone card removed) |
+| P5-T04 | todo | P5-T02 | Slider-only zoom + px tooltip (−/+ buttons removed) |
+| P5-T05 | todo | P5-T03, P5-T04 | Image-controls card (rotate ±15° + delete + slider) |
+| P5-T06 | todo | P5-T02 | Pet-name card (native checkbox + pill input) |
+| P5-T07 | todo | P5-T02 | Cutout browser (chips, 3-up pager + dots, layered thumbs, auto-preselect) |
+| P5-T08 | todo | P5-T07 | Browse-All modal + search |
+| P5-T09 | todo | P5-T03, P5-T05, P5-T06, P5-T07, P5-T08 | Save row + full-parity sweep |
 
 ---
 
@@ -175,3 +188,7 @@ _Newest last. One line per completed task or phase transition:_
 - P4-T02 blocked — live asset PUT needs staging + storage-bucket CORS (GP-02); parked per AGENTS §5
 - P4-T06 done — test:e2e no-third-party green (3 browsers); CSP/SRI + Charter §9 privacy note shipped — 5e53278
 - P4-T08 done — release:dry-run green (build+size+no-secret+pack+SRI); tags:v* CI gate; RELEASING.md — 3d6ce9c
+- Phase P5 planned — visual-parity spec (`docs/13`) + plan (`phases/05`) authored from store source
+  (PetCustomizer.jsx, API mode); owner decisions 2026-07-21: store palette = defaults, rotation IN,
+  slider-only zoom, header kept, no pet-type
+- P5-T01 done — typecheck + config(15)+theme(6) unit + lint green; full suite 159
