@@ -235,6 +235,10 @@ function render(state: ActiveDesigner): void {
 /** Load the selected cutout's mask PNG, then re-render with it on top. */
 async function selectCutout(state: ActiveDesigner, template: Template): Promise<void> {
   const image = new Image();
+  // Live masks are served cross-origin (storage/CDN). Without CORS opt-in the canvas would TAINT
+  // and toBlob() would throw at save (docs/05 §8.1 — the mask host must send CORS headers, like
+  // the mockup). Fixtures (same-origin/blob) are unaffected.
+  image.crossOrigin = 'anonymous';
   image.src = template.maskUrl;
   await image.decode();
   state.cutout = { template, image };
