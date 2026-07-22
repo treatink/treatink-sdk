@@ -48,13 +48,19 @@
         position: sticky;
         top: 0;
         z-index: 20;
-        display: flex;
-        align-items: center;
-        gap: 16px;
         padding: 14px 24px;
         background: rgba(251, 248, 244, 0.85);
         backdrop-filter: saturate(1.4) blur(8px);
         border-bottom: 1px solid var(--line);
+      }
+      /* Same container as the content below — logo/cart don't span the full window. */
+      .header-inner {
+        max-width: 1120px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
       }
       .logo {
         display: flex;
@@ -466,12 +472,14 @@
   </head>
   <body>
     <header>
-      <div class="logo"><span class="mark">🐾</span> TreatInk<small>SDK</small></div>
-      <nav>
-        <button class="cart-btn" id="open-cart">
-          🛒 Cart <span class="cart-count" id="cart-count">0</span>
-        </button>
-      </nav>
+      <div class="header-inner">
+        <div class="logo"><span class="mark">🐾</span> TreatInk<small>SDK</small></div>
+        <nav>
+          <button class="cart-btn" id="open-cart">
+            🛒 Cart <span class="cart-count" id="cart-count">0</span>
+          </button>
+        </nav>
+      </div>
     </header>
 
     <section class="hero">
@@ -560,9 +568,10 @@
       window.tk = tk; // handy for poking at the SDK in devtools
 
       // Surface the active mode in the hero so it's never ambiguous which backend you're hitting.
+      const liveHost = apiBaseUrl || 'https://treatinkapi.com';
       document.getElementById('eyebrow').textContent =
         mode === 'live'
-          ? `LIVE · ${apiBaseUrl || 'api.treatink.com'}`
+          ? `${/staging/i.test(liveHost) ? 'STAGING' : 'LIVE'} · ${liveHost}`
           : 'Powered by @treatink/sdk · fixtures mode';
 
       const fmt = (cents, cur = 'USD') =>
