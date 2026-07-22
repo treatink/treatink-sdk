@@ -319,9 +319,27 @@ export function mountCutouts(
     const endDragScroll = () => {
       if (!dragScroll) return;
       const dragged = dragScroll.moved;
+      const startLeft = dragScroll.startLeft;
       dragScroll = null;
-      row.classList.remove('tk-drag-scrolling');
-      if (dragged) suppressNextClick = true;
+      if (!dragged) {
+        row.classList.remove('tk-drag-scrolling');
+        return;
+      }
+      suppressNextClick = true;
+      // Swiper-like release (owner 2026-07-22): a drag past a SMALL threshold (15% of a page)
+      // commits to the next/previous page — no need to pull a full page across. Snap stays off
+      // during the settle animation so mandatory snap can't fight it.
+      const stride = row.clientWidth + 10;
+      const startPage = Math.round(startLeft / stride);
+      const delta = row.scrollLeft - startLeft;
+      const threshold = stride * 0.15;
+      let target = startPage;
+      if (delta > threshold) target = startPage + 1;
+      else if (delta < -threshold) target = startPage - 1;
+      const maxScroll = row.scrollWidth - row.clientWidth;
+      const left = Math.max(0, Math.min(target * stride, maxScroll));
+      row.scrollTo({ left, behavior: 'smooth' });
+      setTimeout(() => row.classList.remove('tk-drag-scrolling'), 400);
     };
     let suppressNextClick = false;
     row.addEventListener('pointerup', endDragScroll);
