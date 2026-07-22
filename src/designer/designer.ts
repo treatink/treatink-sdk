@@ -555,13 +555,14 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
       },
     },
   );
-  // Message placement: desktop = above the pet-name card; mobile = above the canvas.
+  // Message placement: desktop = top of the controls column (above image controls AND the
+  // pet-name card, owner 2026-07-22); mobile = above the canvas.
   const mobileQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT_PX - 1}px)`);
   const placeMessages = () => {
     if (mobileQuery.matches) {
       handles.preview.insertBefore(messages, frame);
-    } else if (state.textControl) {
-      handles.controls.insertBefore(messages, state.textControl.root);
+    } else {
+      handles.controls.prepend(messages);
     }
   };
   placeMessages();
