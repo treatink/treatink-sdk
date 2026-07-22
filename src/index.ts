@@ -38,7 +38,6 @@ export type {
   LabelZone,
   OpeningGeometry,
   RectWithCount,
-  ShippingAddress,
   BuildPayloadInput,
   OrderPayload,
   TreatinkEvent,

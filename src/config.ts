@@ -10,7 +10,11 @@ import type { TreatinkConfig } from './types.js';
  */
 
 export const ACCEPTED_KEY_PREFIXES = ['pk_test_', 'pk_live_'] as const;
-export const DEFAULT_API_BASE_URL = 'https://api.treatink.com';
+/**
+ * Owner update 2026-07-22: api.treatink.com is the legacy host; the current API lives at
+ * treatinkapi.com (staging: staging.treatinkapi.com). The transport appends the /v1/... paths.
+ */
+export const DEFAULT_API_BASE_URL = 'https://treatinkapi.com';
 export const DEFAULT_MAX_PERSONALIZATION_LENGTH = 20;
 
 export interface ResolvedConfig extends Required<Pick<TreatinkConfig, 'channel'>> {

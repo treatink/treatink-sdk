@@ -151,30 +151,42 @@ composite). The two `ast_` ids flow into `orders.buildPayload`.
 
 ---
 
-## 7. Order — SDK-assembled body (endpoint is backend's job; out of scope)
-`orders.buildPayload()` assembles this; the fixture order response echoes an accepted order. The real
-`POST /v1/orders` does not yet exist — that's the backend dev's concern (GAP-PLAN "Out of scope"),
-but the SDK must produce the correct shape:
+## 7. Order — the REAL `POST /v1/orders` body (sk, scope `order_manage`) — LIVE 2026-07-22
+
+The endpoint is registered in production (`orders/composition.py`). The schema is **strict**
+(`extra="forbid"`; nullable fields must be PRESENT as explicit `null`). Requires an
+`Idempotency-Key` header (1–255 visible-ASCII; scoped per partner+mode; same key + different body →
+`409 idempotency_conflict`); `external_order_id` also has its own per-scope uniqueness constraint.
+`orders.buildPayload()` assembles exactly this; `submitOrder` sends the header (default =
+`external_order_id`):
 ```json
-{ "external_order_id": "partner-1001", "channel_order_number": "1001",
-  "currency": "USD", "payment_status": "paid",
-  "customer": { "email": "a@b.com", "first_name": "A", "last_name": "B" },
-  "shipping_address": { "name": "A B", "address1": "1 St", "address2": null, "city": "X",
-                        "state": "CA", "postal_code": "90000", "country_code": "US" },
+{ "external_order_id": "partner-1001", "display_order_number": "#1001",
+  "currency": "USD",
+  "recipient": { "name": "A B", "email": "a@b.com", "phone": null },
+  "destination": { "address_line_1": "1 St", "address_line_2": null, "city": "X",
+                   "region": "CA", "postal_code": "90000", "country_code": "US" },
+  "fulfillment": { "delivery_method": "ship_to_recipient", "instructions": null },
+  "amounts": { "subtotal_cents": 999, "discount_cents": 0, "shipping_cents": 295,
+               "tax_cents": 0, "total_cents": 1294 },
   "line_items": [
-    { "external_line_item_id": "li-1", "variant_id": "var_…", "sku": "SSGTTBC", "quantity": 1,
+    { "external_line_item_id": "li-1", "variant_id": "var_…", "quantity": 1,
       "unit_price_cents": 999, "subtotal_cents": 999,
-      "source_asset_id": "ast_…b101", "rendered_asset_id": "ast_…b102",
-      "personalization": { "personalization_text": "Milo", "cutout_label_id": "cut_…aa01",
-                           "pet_name_position": "bottom",
-                           "image_metadata": { "x": 250, "y": 300, "scale": 1.4, "rotation": 0 },
-                           "label_zone": { "x": 0.321, "y": 0.316, "width": 0.358, "height": 0.478 } } }
+      "personalization": { "source_asset_id": "ast_…b101", "rendered_asset_id": "ast_…b102",
+                           "cutout_label_id": "cut_…aa01", "pet_name": "Milo" } }
   ] }
 ```
-Fixture response: `{ "id": "ord_fx_…", "order_number": "…", "status": "received",
-"external_order_id": "partner-1001", "created_at": "…", "line_items": [ { "id": "…",
-"external_line_item_id": "li-1", "variant_id": "var_…", "sku": "…", "quantity": 1 } ] }`.
-Re-posting the same `external_order_id` returns the original (idempotent).
+Wire rules: `currency` is `"USD"` only; recipient needs ≥ 1 of email/phone;
+`external_line_item_id` required + unique; 1–100 lines; `delivery_method` is always
+`"ship_to_recipient"`. **The wire carries NO transform / pet-name position / label zone / sku** —
+the print pipeline uses the `rendered` asset directly; that context stays client-side in the draft
+(`docs/05` §8.2 note). Order `status` vocabulary: `received | in_production | shipped | rejected |
+cancelled` (creation returns `received`).
+
+Fixture response mirrors the real `OrderResponse` essentials: `{ "id": "ord_fx_…",
+"status": "received", "external_order_id": "partner-1001", "display_order_number": "#1001"|null,
+"created_at": "…", "line_items": [ { "id": "…", "external_line_item_id": "li-1",
+"variant_id": "var_…", "quantity": 1 } ] }`. The fixture stays idempotent on
+`external_order_id`.
 
 ---
 

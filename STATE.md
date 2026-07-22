@@ -131,12 +131,18 @@ _None yet._ When a task blocks, add an entry here (template — `AGENTS.md` §5)
   the pipeline meanwhile (P3 e2e). `P4-T03`/`P4-T04` are also expected blockers; `P4-T07` may run
   hybrid/fixtures-backed while these are parked.
 
-Pre-identified blockers to expect (not failures). Confirmed against the real `treatink-api` repo —
-see **`GAP-PLAN.md`** for the fixes and owners:
-- **P4 order submit** — `POST /v1/orders` **does not exist** (GAP-PLAN GP-01). Go-live prerequisite (partner-server), not an SDK-build blocker.
-- **P4-T02 assets** — real backend is asset-based (`/v1/assets` declare→PUT→finalize, roles source/rendered). SDK realigns to this (GP-03/04/05/07); preview handled locally (GP-08), so no backend preview endpoint needed.
-- **P4-T03 templates** — NOT a blocker: cutout-labels ship via `GET /v1/catalog/cutout-labels` with precomputed alpha geometry. Re-point at the catalog endpoint.
-- **P4-T04 CORS** — API CORS is wildcard `*` (works, keep — GP-19); confirm storage-bucket CORS for browser PUT (GP-02).
+Pre-identified blockers — status after the 2026-07-22 backend pull (see `docs/04` §1 UPDATE):
+- **P4 order submit** — ✅ `POST /v1/orders` now EXISTS (sk-only, Idempotency-Key required, strict
+  new body). SDK realigned: `buildPayload`/`submitOrder`/fixtures/docs all on the real shape.
+- **P4-T02 assets** — flow unchanged (declare→PUT→finalize); staging exists at
+  `staging.treatinkapi.com`. Browser-PUT storage CORS is verified by `npm run test:staging`
+  (test/e2e/http-staging.spec.ts) — **awaiting real keys** (the received `key_<32hex>` strings are
+  credential PUBLIC IDs, not bearer keys; need `pk_test_…`/`sk_test_…`).
+- **P4-T03 templates** — live `GET /v1/catalog/cutout-labels` confirmed; staging spec covers it.
+- **P4-T04 CORS** — wildcard machine CORS confirmed; `Idempotency-Key` now in the allowlist
+  (errors.py:288-293); staging spec proves the cross-origin browser calls.
+- **Hosts** — production `https://treatinkapi.com`, staging `https://staging.treatinkapi.com`
+  (`api.treatink.com` legacy). SDK default updated.
 
 **Gap-filling plan in progress — see `GAP-PLAN.md` for GP-01..GP-20 status.**
 
@@ -201,3 +207,7 @@ _Newest last. One line per completed task or phase transition:_
 - P5-T08 done — cutouts e2e (36) + a11y (15) green, 3 browsers; chunk 19.4/150 KB — 83fae18
 - P5-T09 done — save CTA + sweep: 162 unit + 41 golden + 234 e2e (3 browsers) + a11y + size + no-secret — f21d5f6
 - Phase P5 complete — machine exit gate green; remaining: human harness eyeball vs the live store
+- 2026-07-22 live-API realignment — POST /v1/orders is REAL: buildPayload/submitOrder/fixtures/docs
+  moved to the strict wire shape (recipient/destination/amounts; personalization = asset ids +
+  cutout + pet_name); base URL → treatinkapi.com; staging rig added (test:staging, env-gated);
+  full suite 162 unit + 234 e2e green (+9 staging skipped pending real keys)

@@ -89,8 +89,9 @@ the full visual + behavioral reference. No external capture required.
 These do **not** block the SDK build. The SDK ships against fixtures; wiring to the live backend is a
 later config change the backend dev enables by delivering these. Listed only for traceability.
 
-- **Real `POST /v1/orders` endpoint** — fixtures simulate it; our `orders.buildPayload` just targets
-  its documented schema. (was GP-01)
+- **Real `POST /v1/orders` endpoint** — **DELIVERED by the backend 2026-07-22** (sk-only,
+  Idempotency-Key required; strict schema — `docs/04` §2.7). The SDK realigned `buildPayload` +
+  `submitOrder` to the real shape. (was GP-01)
 - **Storage-bucket CORS for browser PUT** to presigned URLs — live-mode infra. (was GP-02)
 - **pk-readable preview endpoint** — sidestepped entirely by GP-08 (local preview).
 - **Channel-scoped CORS / `channel_not_registered`** — skipped by GP-19.

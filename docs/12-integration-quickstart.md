@@ -88,11 +88,18 @@ by `draftId`.
 
 ```ts
 const payload = tk.orders.buildPayload({
-  externalOrderId: 'partner-1001', // your order id — also the idempotency key
-  channelOrderNumber: '1001',
-  currency: 'USD',
-  paymentStatus: 'paid',
-  customer: { email: 'shopper@example.com', firstName: 'Sam', lastName: 'Rivera' },
+  externalOrderId: 'partner-1001', // your order id — also the default Idempotency-Key
+  displayOrderNumber: '#1001',
+  currency: 'USD', // the API accepts USD only
+  recipient: { name: 'Sam Rivera', email: 'shopper@example.com' }, // email or phone required
+  destination: {
+    addressLine1: '1 Main St',
+    city: 'Austin',
+    region: 'TX',
+    postalCode: '78701',
+    countryCode: 'US',
+  },
+  amounts: { subtotalCents: 999, discountCents: 0, shippingCents: 295, taxCents: 0, totalCents: 1294 },
   lines: [{ externalLineItemId: 'li-1', draftId, quantity: 1, unitPriceCents: 999 }],
 });
 ```
@@ -102,8 +109,8 @@ the browser never holds a secret key.
 
 ## 4. Submit the order (server, secret key)
 
-On your server (Node ≥ 18), submit with your **secret** key. Re-posting the same
-`external_order_id` returns the original order, so retries are safe.
+On your server (Node ≥ 18), submit with your **secret** key. Re-posting the same payload with the
+same `Idempotency-Key` (default: `external_order_id`) replays the original order, so retries are safe.
 
 ```ts
 import { submitOrder } from '@treatink/sdk/server';
@@ -115,8 +122,10 @@ const order = await submitOrder(payload, {
 // order.status === 'received'; order.externalOrderId === 'partner-1001'
 ```
 
-> The live `POST /v1/orders` endpoint is the backend's to build (GAP-PLAN, out-of-scope for the
-> SDK). `submitOrder` targets the documented body and is testable against a mock today.
+> `POST /v1/orders` is LIVE (2026-07-22): secret-key scope, REQUIRED `Idempotency-Key` header
+> (submitOrder sends it automatically — default = `external_order_id`), 409 `idempotency_conflict`
+> if the same key is reused with a different body. Staging: `https://staging.treatinkapi.com` via
+> `apiBaseUrl`.
 
 ## 5. Recommended CSP & SRI (`docs/11` §5)
 
@@ -126,7 +135,7 @@ pin the CDN script with a Subresource-Integrity hash (published per release):
 ```
 Content-Security-Policy:
   script-src 'self' sdk.treatink.com;
-  connect-src 'self' api.treatink.com <storage-host>;
+  connect-src 'self' treatinkapi.com <storage-host>;
   img-src 'self' cdn.treatink.com blob: data:;
 ```
 

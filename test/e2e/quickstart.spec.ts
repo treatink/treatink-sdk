@@ -85,19 +85,31 @@ test('the quickstart integrates end to end in fixtures mode', async ({ page }) =
   const payload = await page.evaluate((draftId) => {
     return window.tk.orders.buildPayload({
       externalOrderId: 'partner-1001',
-      channelOrderNumber: '1001',
+      displayOrderNumber: '#1001',
       currency: 'USD',
-      paymentStatus: 'paid',
-      customer: { email: 'shopper@example.com', firstName: 'Sam', lastName: 'Rivera' },
+      recipient: { name: 'Sam Rivera', email: 'shopper@example.com' },
+      destination: {
+        addressLine1: '1 Main St',
+        city: 'Austin',
+        region: 'TX',
+        postalCode: '78701',
+        countryCode: 'US',
+      },
+      amounts: {
+        subtotalCents: 999,
+        discountCents: 0,
+        shippingCents: 295,
+        taxCents: 0,
+        totalCents: 1294,
+      },
       lines: [{ externalLineItemId: 'li-1', draftId, quantity: 1, unitPriceCents: 999 }],
     });
   }, cartLine.draftId);
   const line = (payload as { line_items: Record<string, unknown>[] }).line_items[0]!;
-  expect(line['source_asset_id']).toMatch(/^ast_fx_/);
-  expect(line['rendered_asset_id']).toMatch(/^ast_fx_/);
-  expect((line['personalization'] as { personalization_text: string }).personalization_text).toBe(
-    'Milo',
-  );
+  const personalization = line['personalization'] as Record<string, unknown>;
+  expect(personalization['source_asset_id']).toMatch(/^ast_fx_/);
+  expect(personalization['rendered_asset_id']).toMatch(/^ast_fx_/);
+  expect(personalization['pet_name']).toBe('Milo');
 
   // §4 — server submit (mock endpoint), and a re-post is idempotent on external_order_id.
   const originalFetch = globalThis.fetch;
@@ -110,9 +122,9 @@ test('the quickstart integrates end to end in fixtures mode', async ({ page }) =
       new Response(
         JSON.stringify({
           id: 'ord_fx_00000001',
-          order_number: '1001',
           status: 'received',
           external_order_id: body.external_order_id,
+          display_order_number: '#1001',
         }),
         { status: 201 },
       ),

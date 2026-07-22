@@ -164,17 +164,18 @@ export interface ArtworkFinalWire {
   finalized_at: string;
 }
 
+/** Mirrors the REAL OrderResponse essentials (orders/schemas.py, 2026-07-22) — no order_number,
+ *  no sku on lines; display_order_number echoes the request. */
 export interface OrderEchoWire {
   id: string;
-  order_number: string;
   status: 'received';
   external_order_id: string;
+  display_order_number: string | null;
   created_at: string;
   line_items: Array<{
     id: string;
     external_line_item_id: string | null;
     variant_id: string;
-    sku: string;
     quantity: number;
   }>;
 }
@@ -558,9 +559,10 @@ export class FixtureTransport implements Transport {
     const lines = Array.isArray(body['line_items']) ? (body['line_items'] as unknown[]) : [];
     const echo: OrderEchoWire = {
       id: `ord_fx_${String(seq).padStart(8, '0')}`,
-      order_number: String(1000 + seq),
       status: 'received',
       external_order_id: externalOrderId,
+      display_order_number:
+        typeof body['display_order_number'] === 'string' ? body['display_order_number'] : null,
       created_at: FIXTURE_NOW,
       line_items: lines.map((raw, i) => {
         const line = raw as Record<string, unknown>;
@@ -571,7 +573,6 @@ export class FixtureTransport implements Transport {
               ? line['external_line_item_id']
               : null,
           variant_id: typeof line['variant_id'] === 'string' ? line['variant_id'] : '',
-          sku: typeof line['sku'] === 'string' ? line['sku'] : '',
           quantity: Number(line['quantity'] ?? 0),
         };
       }),

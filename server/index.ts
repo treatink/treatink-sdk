@@ -6,11 +6,13 @@ import type { OrderPayload } from '../src/types.js';
  * @treatink/sdk/server — the ONLY secret-key operation: order submission (Charter §6.4). Node ≥ 18.
  * NEVER imported by the browser build (enforced by scripts/check-no-secret.mjs).
  *
- * NOTE: the real POST /v1/orders endpoint does not exist yet (GAP-PLAN out-of-scope, backend's
- * job). This helper targets the docs/08 §7 body and is testable against a mock. Tenant/channel
- * derives from the bearer key — NO channel header on the wire (docs/04 §2.8); `channel` is kept
- * in options for symmetry/validation only. Idempotent: re-posting the same `external_order_id`
- * (the default Idempotency-Key) returns the original order — safe to retry.
+ * POST /v1/orders is LIVE (treatink-api orders/composition.py, 2026-07-22): secret-key scope
+ * (order_manage), REQUIRED Idempotency-Key header (1–255 visible-ASCII; scoped per partner+mode;
+ * same key + different body → 409 idempotency_conflict), and a separate per-scope uniqueness
+ * constraint on external_order_id. Tenant/channel derives from the bearer key — NO channel header
+ * on the wire (docs/04 §2.8); `channel` is kept in options for symmetry/validation only.
+ * Default Idempotency-Key = the payload's external_order_id, so re-posting the same order body
+ * replays the original response — safe to retry.
  */
 export interface SubmitOrderOptions {
   /** Secret key: sk_test_… | sk_live_… */
@@ -23,9 +25,10 @@ export interface SubmitOrderOptions {
 
 export interface SubmitOrderResult {
   id: string;
-  orderNumber: string;
+  /** 'received' on creation (wire vocabulary: received | in_production | shipped | rejected | cancelled). */
   status: string;
   externalOrderId: string;
+  displayOrderNumber: string | null;
 }
 
 export async function submitOrder(
@@ -40,7 +43,7 @@ export async function submitOrder(
   }
   const rawExternalOrderId = (payload as Record<string, unknown>)['external_order_id'];
   const externalOrderId = typeof rawExternalOrderId === 'string' ? rawExternalOrderId : '';
-  const response = await fetch(`${options.apiBaseUrl ?? 'https://api.treatink.com'}/v1/orders`, {
+  const response = await fetch(`${options.apiBaseUrl ?? 'https://treatinkapi.com'}/v1/orders`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${options.secretKey}`,
@@ -62,14 +65,14 @@ export async function submitOrder(
 
   const order = body as {
     id: string;
-    order_number: string;
     status: string;
     external_order_id: string;
+    display_order_number: string | null;
   };
   return {
     id: order.id,
-    orderNumber: order.order_number,
     status: order.status,
     externalOrderId: order.external_order_id,
+    displayOrderNumber: order.display_order_number ?? null,
   };
 }

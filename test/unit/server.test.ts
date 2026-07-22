@@ -8,9 +8,9 @@ import { TreatinkError } from '../../src/types.js';
 const PAYLOAD = { external_order_id: 'partner-1001', currency: 'USD', line_items: [] };
 const OK_BODY = {
   id: 'ord_0000000000000000000000000000c001',
-  order_number: '1001',
   status: 'received',
   external_order_id: 'partner-1001',
+  display_order_number: '#1001',
 };
 
 afterEach(() => vi.unstubAllGlobals());
@@ -25,12 +25,12 @@ describe('submitOrder (server-only, Charter §6.4)', () => {
     const result = await submitOrder(PAYLOAD, {
       secretKey: 'sk_test_abc',
       channel: 'rileyspets.com',
-      apiBaseUrl: 'https://staging.api.treatink.com',
+      apiBaseUrl: 'https://staging.treatinkapi.com',
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('https://staging.api.treatink.com/v1/orders');
+    expect(url).toBe('https://staging.treatinkapi.com/v1/orders');
     expect(init.method).toBe('POST');
     const headers = init.headers as Record<string, string>;
     expect(headers['Authorization']).toBe('Bearer sk_test_abc');
@@ -40,9 +40,9 @@ describe('submitOrder (server-only, Charter §6.4)', () => {
     expect(JSON.parse(init.body as string)).toEqual(PAYLOAD);
     expect(result).toEqual({
       id: OK_BODY.id,
-      orderNumber: '1001',
       status: 'received',
       externalOrderId: 'partner-1001',
+      displayOrderNumber: '#1001',
     });
   });
 

@@ -47,11 +47,20 @@ registered surface (`application.py` + `*/composition.py`):
 | GET | `/v1/assets/{id}` | **sk** (`personalization_read`) | read asset (server-only) |
 | POST/GET | `/v1/cutout-labels`, `…/{id}/finalize`, `…/{id}` | **sk** (`cutout_label_manage`) | custom partner masks |
 | GET/PUT | `/v1/cutout-label-selections` | sk | partner default-cutout preference |
+| POST | `/v1/orders` | **sk** (`order_manage`) | create order (LIVE 2026-07-22; requires `Idempotency-Key`) |
+| GET | `/v1/orders/{id}` · `/v1/orders` | **sk** | read order / cursor-paged summaries |
 
-**Does NOT exist:** `/v1/orders`, `/v1/order-ingest`, shipments, webhooks, sessions (grep-confirmed).
-Auth: `Authorization: Bearer <key>` only — **no channel header** (tenant derives from the key; see
-§2.8). Keys `pk_(test|live)` / `sk_(test|live)`. Error envelope `{ error:{ type, code, message,
-param, request_id } }`; statuses 400/401/403/404/409/413/415/422/**503**. Idempotency-Key header.
+**UPDATE 2026-07-22:** `/v1/orders` now EXISTS (POST/GET, sk-only — see rows above and §2.7).
+Still absent from the machine surface: sessions, webhooks, machine shipments (shipments are
+portal-only: `/v1/partner/accounts/{id}/orders/{id}/shipments`, human-cookie auth — not for the
+SDK). Auth: `Authorization: Bearer <key>` only — **no channel header** (tenant derives from the
+key; see §2.8). Keys `pk_(test|live)_<22>_<43>` / `sk_(test|live)_<22>_<43>` — confirmed unchanged;
+`key_<32hex>` strings are credential PUBLIC IDs (portal listings), not bearer keys. Error envelope
+`{ error:{ type, code, message, param, request_id } }`; statuses
+400/401/403/404/405/409/413/415/422/**503**. `Idempotency-Key` header: REQUIRED on POST /v1/orders,
+admitted by machine CORS (`MACHINE_CORS_ALLOW_HEADERS`, errors.py:288-293). Hosts (2026-07-22):
+production `https://treatinkapi.com`, staging `https://staging.treatinkapi.com`
+(`api.treatink.com` is legacy).
 Assets: roles `source|rendered` only, ≤ 50 MB, pending expires in 900 s, unreferenced expire ~30 days.
 
 ## 2. Field-by-field reconciliation
@@ -103,18 +112,18 @@ what fixtures and `HttpTransport` both implement (definitive JSON in `docs/08-fi
 |---|---|---|
 | Native `personalization_text`; `animal_type` deprecated | Backend catalog has `pet_name_position` (layout) + `animal_type`; **no customer-name field** (there is no order endpoint) | **SDK.** SDK public copy uses `personalizationText`; "Pet Name" is Riley's channel copy. On the wire, the customer name lives in the SDK-proposed **order body** as `personalization.personalization_text` (`docs/08` §7) — the single source of truth. `animal_type` is neither sent nor surfaced by the SDK (subject selection deferred), so no rename is required backend-side. |
 
-### 2.7 Orders — NOTE: no live endpoint; body defined in `docs/08` §7 (single source of truth)
-The order endpoint **does not exist** in the backend (§1); `POST /v1/orders` is a **backend addition**
-(GAP-PLAN Out-of-scope). The SDK only assembles the body via `buildPayload` and submits via
-`@treatink/sdk/server.submitOrder` (idempotent on `external_order_id`).
+### 2.7 Orders — LIVE (2026-07-22); the wire schema in `docs/08` §7 is now the REAL one
 
-**The authoritative order-body shape is `docs/08` §7** — do not use any other shape (an earlier
-`personalization_metadata{pet_name, frame_slug}` sketch is superseded). Per §8: line items carry
-`variant_id`, `sku`, `quantity`, pricing, `source_asset_id`, `rendered_asset_id`, and
-`personalization{ personalization_text, cutout_label_id, pet_name_position, image_metadata, label_zone }`
-where **`image_metadata` = `{x,y,scale,rotation}` in 900×1200 canvas space** (`docs/05` §8.2). Since
-no endpoint exists yet, this is the SDK-proposed contract the backend dev should honor when they build
-`/v1/orders`; fixtures echo it.
+`POST /v1/orders` is registered in production (`orders/composition.py`), **secret-key** scope
+(`order_manage` — a pk gets 403). The earlier SDK-proposed body is superseded by the real strict
+schema: `recipient`/`destination`/`fulfillment`/`amounts`/`line_items`; per-line
+`personalization = { source_asset_id, rendered_asset_id, cutout_label_id|null, pet_name|null }` —
+**no** `personalization_text`/`pet_name_position`/`image_metadata`/`label_zone` on the wire (the
+print pipeline consumes the `rendered` asset directly; transform context stays in the draft,
+`docs/05` §8.2 note). `currency` = `"USD"` only. Idempotency = required `Idempotency-Key` header
+(scoped per partner+mode; conflict → 409 `idempotency_conflict`) + a separate per-scope uniqueness
+constraint on `external_order_id`. `buildPayload` emits the exact body (explicit nulls);
+`@treatink/sdk/server.submitOrder` sends the header (default = `external_order_id`).
 
 ### 2.8 Channel header
 | Charter | Live | Resolution |
@@ -129,7 +138,7 @@ no endpoint exists yet, this is the SDK-proposed contract the backend dev should
 ### 2.10 Shipments & webhooks
 | Charter | Live | Resolution |
 |---|---|---|
-| Not in Charter scope | `GET /v1/orders/{id}/shipments`, `POST /v1/webhooks` (sk only); webhook HMAC signing | **OUT OF SCOPE (MVP).** Not part of the SDK MVP. Note for post-MVP; do not build. |
+| Not in Charter scope | Shipments exist only on the PARTNER-PORTAL surface (`/v1/partner/...`, human-cookie auth) — no machine shipments/webhooks endpoints | **OUT OF SCOPE (MVP).** Not part of the SDK MVP; the portal surface is not the SDK's. |
 
 ## 3. Gated dependencies on the API/platform team
 

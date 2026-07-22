@@ -63,12 +63,12 @@ describe('resolveConfig', () => {
     const r = resolveConfig({
       ...VALID,
       mode: 'live',
-      apiBaseUrl: 'https://staging.api.treatink.com',
+      apiBaseUrl: 'https://staging.treatinkapi.com',
       maxPersonalizationLength: 12,
       debug: true,
     });
     expect(r.mode).toBe('live');
-    expect(r.apiBaseUrl).toBe('https://staging.api.treatink.com');
+    expect(r.apiBaseUrl).toBe('https://staging.treatinkapi.com');
     expect(r.maxPersonalizationLength).toBe(12);
     expect(r.debug).toBe(true);
   });

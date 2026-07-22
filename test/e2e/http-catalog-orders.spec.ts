@@ -154,9 +154,9 @@ test('server submitOrder posts the live order path with Bearer sk + Idempotency-
       new Response(
         JSON.stringify({
           id: 'ord_live_1',
-          order_number: '1001',
           status: 'received',
           external_order_id: 'partner-1',
+          display_order_number: '#1001',
         }),
         { status: 201 },
       ),

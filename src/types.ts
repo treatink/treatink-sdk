@@ -13,7 +13,7 @@ export interface TreatinkConfig {
   channel: string;
   /** Default 'fixtures' until the live API is wired (docs/09). */
   mode?: 'live' | 'fixtures';
-  /** Override for staging; default https://api.treatink.com */
+  /** Override for staging (https://staging.treatinkapi.com); default https://treatinkapi.com */
   apiBaseUrl?: string;
   theme?: ThemeConfig;
   copy?: Partial<CopyStrings>;
@@ -294,29 +294,47 @@ export interface CopyStrings {
   genericError: string;
 }
 
-export interface ShippingAddress {
-  name: string;
-  address1: string;
-  address2?: string | null;
-  city: string;
-  state: string;
-  postalCode: string;
-  countryCode: string;
-}
-
+/**
+ * Input for orders.buildPayload — mirrors the REAL POST /v1/orders contract
+ * (treatink-api orders/schemas.py, 2026-07-22; docs/08 §7). The wire schema is strict
+ * (`extra="forbid"`, nullable fields must be PRESENT) — buildPayload emits explicit nulls.
+ */
 export interface BuildPayloadInput {
+  /** Unique per partner+mode (DB constraint); also the default Idempotency-Key. */
   externalOrderId: string;
-  channelOrderNumber?: string;
-  currency: string;
-  paymentStatus: string;
-  customer: { email: string; firstName?: string; lastName?: string };
-  shippingAddress?: ShippingAddress;
+  displayOrderNumber?: string | null;
+  /** The API accepts only 'USD' today. */
+  currency: 'USD';
+  /** At least one of email/phone is required (wire rule). */
+  recipient: { name: string; email?: string | null; phone?: string | null };
+  destination: {
+    addressLine1: string;
+    addressLine2?: string | null;
+    city: string;
+    region?: string | null;
+    postalCode?: string | null;
+    /** ISO 3166-1 alpha-2, e.g. 'US'. */
+    countryCode: string;
+  };
+  /** delivery_method is always 'ship_to_recipient' (the only wire value). */
+  fulfillment?: { instructions?: string | null };
+  /** Partner-reported USD integer cents; reconciled server-side. */
+  amounts: {
+    subtotalCents: number;
+    discountCents: number;
+    shippingCents: number;
+    taxCents: number;
+    totalCents: number;
+  };
   lines: Array<{
-    externalLineItemId?: string;
-    /** Pulls variantId, asset ids, personalization from the draft. */
+    /** REQUIRED and unique within the order (wire rule). */
+    externalLineItemId: string;
+    /** Pulls variant_id, asset ids, cutout id, and pet_name from the draft. */
     draftId: string;
+    /** 1–100. */
     quantity: number;
     unitPriceCents: number;
+    /** Default: quantity × unitPriceCents. */
     subtotalCents?: number;
   }>;
 }

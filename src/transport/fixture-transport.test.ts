@@ -192,13 +192,12 @@ describe('failNext (Charter §11, docs/08 §8)', () => {
   });
 });
 
-describe('order echo (docs/08 §7)', () => {
+describe('order echo (docs/08 §7 — real OrderResponse essentials)', () => {
   const BODY = {
     external_order_id: 'partner-1001',
+    display_order_number: '#1001',
     currency: 'USD',
-    line_items: [
-      { external_line_item_id: 'li-1', variant_id: 'var_fx_1', sku: 'SSGTTBC', quantity: 1 },
-    ],
+    line_items: [{ external_line_item_id: 'li-1', variant_id: 'var_fx_1', quantity: 1 }],
   };
 
   it('echoes an accepted order', async () => {
@@ -207,8 +206,9 @@ describe('order echo (docs/08 §7)', () => {
     expect(order.id).toMatch(/^ord_fx_/);
     expect(order.status).toBe('received');
     expect(order.external_order_id).toBe('partner-1001');
+    expect(order.display_order_number).toBe('#1001');
     expect(order.line_items).toHaveLength(1);
-    expect(order.line_items[0]!.sku).toBe('SSGTTBC');
+    expect(order.line_items[0]!.variant_id).toBe('var_fx_1');
   });
 
   it('is idempotent on external_order_id', async () => {

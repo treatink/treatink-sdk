@@ -18,7 +18,7 @@ interface TreatinkConfig {
                                   //   'sk_…' (or any non-pk_) throws key_scope_violation (§7)
   channel: string;                // registered storefront hostname (e.g. 'rileyspets.com')
   mode?: 'live' | 'fixtures';     // default 'fixtures' until the live API is wired (docs/09)
-  apiBaseUrl?: string;            // override for staging; default https://api.treatink.com
+  apiBaseUrl?: string;            // staging: https://staging.treatinkapi.com; default https://treatinkapi.com
   theme?: ThemeConfig;
   copy?: Partial<CopyStrings>;
   maxPersonalizationLength?: number;  // text-cap fallback when a template has no maxTextLength (§5; default 20)
@@ -244,16 +244,27 @@ interface CopyStrings {                     // every user-visible designer strin
   genericError: string;
 }
 
+// Mirrors the REAL POST /v1/orders contract (2026-07-22, orders/schemas.py; docs/08 §7).
+// The wire is strict: nullable fields must be present — buildPayload emits explicit nulls.
 interface BuildPayloadInput {
-  externalOrderId: string;
-  channelOrderNumber?: string;
-  currency: string; paymentStatus: string;
-  customer: { email: string; firstName?: string; lastName?: string };
-  shippingAddress?: ShippingAddress;
+  externalOrderId: string;             // unique per partner+mode; default Idempotency-Key
+  displayOrderNumber?: string | null;
+  currency: 'USD';                     // the API accepts USD only
+  recipient: { name: string; email?: string | null; phone?: string | null };  // >=1 contact
+  destination: {
+    addressLine1: string; addressLine2?: string | null;
+    city: string; region?: string | null; postalCode?: string | null;
+    countryCode: string;               // ISO 3166-1 alpha-2
+  };
+  fulfillment?: { instructions?: string | null };   // delivery_method is always ship_to_recipient
+  amounts: { subtotalCents: number; discountCents: number; shippingCents: number;
+             taxCents: number; totalCents: number };
   lines: Array<{
-    externalLineItemId?: string;
-    draftId: string;                   // pulls variantId, asset ids, personalization from the draft
-    quantity: number; unitPriceCents: number; subtotalCents?: number;
+    externalLineItemId: string;        // REQUIRED + unique (wire rule)
+    draftId: string;                   // pulls variant_id, asset ids, cutout id, pet_name
+    quantity: number;                  // 1..100
+    unitPriceCents: number;
+    subtotalCents?: number;            // default quantity x unitPriceCents
   }>;
 }
 // OrderPayload = the exact wire body in docs/08 §7 (snake_case, personalization block). Assembled here.
@@ -268,6 +279,8 @@ interface BuildPayloadInput {
 | `DesignerResult.sessionId`, `templateKey`, `artwork{originalUrl,printUrl}` | `cutoutLabelId`, `artwork{sourceAssetId,renderedAssetId}`, local `previewUrl` | assets not sessions; pk can't read asset URLs (GP-08) |
 | `transform {x,y,scale}` | `+ rotation` | store model carries rotation (`docs/05`; 0 in MVP) |
 | error codes `session_*`, `channel_not_registered`, `invalid_request` | real API codes | GP-06 / GP-19 |
+
+| `BuildPayloadInput` (customer/shippingAddress/paymentStatus; per-line sku + transform/zone in personalization) | recipient/destination/fulfillment/amounts; personalization = asset ids + cutout id + pet_name only | the REAL POST /v1/orders landed 2026-07-22 with this strict shape — the live wire outranks the proposal (`docs/04` §2.7) |
 
 Everything else (config, theme, copy, drafts semantics, `orders.buildPayload`, events) follows the
 Charter.
