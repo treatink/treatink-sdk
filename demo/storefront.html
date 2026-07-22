@@ -43,8 +43,8 @@
         color: inherit;
       }
 
-      /* Header */
-      header {
+      /* Page header only — the cart drawer has its own <header> (scoped by body >). */
+      body > header {
         position: sticky;
         top: 0;
         z-index: 20;
@@ -491,11 +491,11 @@
         Pick a treat, add your favorite photo, choose a frame, and we'll print a one-of-a-kind
         label. Personalization happens right here on the page.
       </p>
-      <div class="badge-row">
+      <!-- <div class="badge-row">
         <span class="pill">🖼️ In-page photo designer</span>
         <span class="pill">🔒 Photos never leave your browser in this demo</span>
         <span class="pill">⚡ Fixtures mode — no network</span>
-      </div>
+      </div> -->
     </section>
 
     <main>
@@ -659,7 +659,7 @@
             <h3>${p.title}</h3>
             <div class="sku">${p.sku}</div>
             <div class="price">${fmt(p.priceCents, p.currency)}</div>
-            <button class="btn" data-sku="${p.sku}">🖼️ Personalize</button>
+            <button class="btn" data-sku="${p.sku}">Personalize</button>
           </div>
         </article>`,
         )
