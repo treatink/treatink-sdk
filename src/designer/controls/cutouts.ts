@@ -74,15 +74,12 @@ export function mountCutouts(
   collapsible.appendChild(inner);
 
   const chips = doc.createElement('div');
-  chips.className = 'tk-chips';
-  chips.setAttribute('role', 'tablist');
+  chips.className = 'tk-chips'; // role=tablist applied at render — skeletons aren't tabs (axe)
 
   const pager = doc.createElement('div');
   pager.className = 'tk-pager';
   const row = doc.createElement('div');
-  row.className = 'tk-cutout-row';
-  row.setAttribute('role', 'listbox');
-  row.setAttribute('aria-label', copy.cutoutsLabel);
+  row.className = 'tk-cutout-row'; // role=listbox applied at render — skeletons aren't options
   const dots = doc.createElement('div');
   dots.className = 'tk-dots';
   pager.append(row, dots);
@@ -98,6 +95,20 @@ export function mountCutouts(
   inner.append(chips, pager, browseWrap);
   root.append(toggle, collapsible);
   host.appendChild(root);
+
+  // Loading skeletons mirroring the loaded layout (owner 2026-07-22): chip pills + a 3-up row of
+  // thumb placeholders, swapped out by the real render below. Browse All hides until loaded.
+  browseWrap.hidden = true;
+  for (let i = 0; i < 4; i++) {
+    const chipSkeleton = doc.createElement('span');
+    chipSkeleton.className = 'tk-skeleton tk-skeleton-chip';
+    chips.appendChild(chipSkeleton);
+  }
+  for (let i = 0; i < 3; i++) {
+    const thumbSkeleton = doc.createElement('span');
+    thumbSkeleton.className = 'tk-skeleton tk-skeleton-thumb';
+    row.appendChild(thumbSkeleton);
+  }
 
   let expanded = true;
   const setExpanded = (next: boolean) => {
@@ -242,6 +253,7 @@ export function mountCutouts(
 
     const renderChips = () => {
       chips.textContent = '';
+      chips.setAttribute('role', 'tablist');
       for (const category of categories) {
         const chip = doc.createElement('button');
         chip.type = 'button';
@@ -285,6 +297,8 @@ export function mountCutouts(
 
     renderRow = () => {
       row.textContent = '';
+      row.setAttribute('role', 'listbox');
+      row.setAttribute('aria-label', copy.cutoutsLabel);
       const visible = templates.filter((t) => t.category === activeCategory);
       for (const template of visible) row.appendChild(buildThumb(template, select));
       renderDots(visible.length);
@@ -371,6 +385,7 @@ export function mountCutouts(
 
     renderChips();
     renderRow();
+    browseWrap.hidden = false; // skeleton phase over
 
     // Auto-preselect (docs/13 §5.3): explicit id wins; unknown id surfaces not_found and falls
     // back; else the first template of the default category — the store's default-frame behavior.
@@ -388,6 +403,9 @@ export function mountCutouts(
     initial ??= templates[0];
     if (initial) select(initial);
   })().catch((cause: unknown) => {
+    // Load failed — clear the skeletons so the card doesn't shimmer forever.
+    chips.textContent = '';
+    row.textContent = '';
     hooks.onError(
       cause instanceof TreatinkError
         ? cause

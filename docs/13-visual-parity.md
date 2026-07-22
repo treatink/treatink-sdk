@@ -343,3 +343,7 @@ pixel beyond its row's stated intent, that's a spec bug: stop and re-check again
 | A-04 | Smaller mobile header title | ≤700px: 19px / weight 700 (axe large-text keeps white-on-#f26b1d at 3:1). |
 | A-05 | Image-controls stacked | Column: label → rotate/delete buttons → slider (store had label+buttons beside the slider). |
 | A-06 | Low-res banner suppressed | Detection stays (`data-lowres`, `DesignerResult.lowRes`); the visible banner + AT announcement are off for now. Re-enable via the toggles in `designer.ts` render(). |
+| A-07 | Cutout-browser loading skeletons (2026-07-22) | Shimmer chip pills + a 3-up thumb row mirroring the loaded layout; Browse All hidden until templates arrive; cleared on load error. |
+| A-08 | Bottom wave removed (2026-07-22) | The store's decorative `customizer-container:after` wave is not rendered. |
+| A-09 | Stable pagination-dots container (2026-07-22) | `.tk-dots` fixed at the active-bullet height (14px) so the bullet grow animation never shifts the Browse All button. |
+| A-10 | Canvas loading spinner (2026-07-22) | Spinner over the canvas frame until the first cutout (or photo) renders; timed fallback removal if templates fail. |

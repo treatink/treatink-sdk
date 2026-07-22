@@ -98,6 +98,8 @@ interface ActiveDesigner {
   mockup: { drawable: HTMLImageElement; width: number; height: number } | null;
   /** Draft transform awaiting the re-selected photo (P3-T04); consumed on first accept. */
   restoredTransform: DraftRecord['transform'] | null;
+  /** Spinner over the canvas until the first cutout renders (removed once, then null). */
+  canvasLoading: HTMLElement | null;
 }
 
 /** Browser EngineEnv: DOM canvas + toBlob, injected at the edge (docs/01 §6). */
@@ -190,6 +192,11 @@ let active: ActiveDesigner | null = null;
 
 /** Re-render the 900×1200 preview from current state (docs/05 §6). Cutout arrives in P2-T08. */
 function render(state: ActiveDesigner): void {
+  // First content on the canvas ends the loading state.
+  if (state.canvasLoading && (state.cutout || state.photo)) {
+    state.canvasLoading.remove();
+    state.canvasLoading = null;
+  }
   const value = state.text.value.trim();
   const showText = state.text.enabled && value !== '' && state.fontReady;
   renderComposite(state.canvas as unknown as CanvasLike, {
@@ -377,6 +384,17 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
   canvas.setAttribute('role', 'img');
   canvas.setAttribute('aria-label', copy.headerTitle);
   frame.appendChild(canvas);
+  // Canvas loading state (owner 2026-07-22): visible until the first cutout renders (live
+  // templates take a beat) — a spinner so the empty frame reads as "loading", not broken.
+  const canvasLoading = document.createElement('div');
+  canvasLoading.className = 'tk-canvas-loading';
+  canvasLoading.setAttribute('role', 'status');
+  canvasLoading.setAttribute('aria-label', copy.headerTitle);
+  const spinner = document.createElement('span');
+  spinner.className = 'tk-spinner';
+  spinner.setAttribute('aria-hidden', 'true');
+  canvasLoading.appendChild(spinner);
+  frame.appendChild(canvasLoading);
   handles.preview.appendChild(frame);
 
   const state: ActiveDesigner = {
@@ -406,6 +424,7 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
     product: null,
     mockup: null,
     restoredTransform: draft?.transform ?? null,
+    canvasLoading,
   };
   active = state;
 
@@ -522,6 +541,16 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
   state.save = mountSave(document, handles.controls, copy, {
     onSave: () => save(state),
     onError: surfaceError,
+  });
+
+  // If templates never arrive (load error), drop the canvas spinner — the error is surfaced.
+  void state.cutouts.ready.finally(() => {
+    setTimeout(() => {
+      if (state.canvasLoading && !state.cutout) {
+        state.canvasLoading.remove();
+        state.canvasLoading = null;
+      }
+    }, 4000); // grace for the mask image decode after ready resolves
   });
 
   if (state.text.enabled) {

@@ -15,10 +15,6 @@ export const MOBILE_BREAKPOINT_PX = 700;
 /** Store gap breakpoint (Tailwind md:) — gaps widen at 768px independent of stacking. */
 export const GAP_BREAKPOINT_PX = 768;
 
-/** Store wave footer (docs/13 §3) — used as a mask so it tints from --tk-panel (I-11-adjacent:
- *  the store hardcodes #e2e6ff in the SVG; masking keeps the identical default look themeable). */
-const WAVE_MASK = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23000' d='M0,192L30,165.3C60,139,120,85,180,90.7C240,96,300,160,360,170.7C420,181,480,139,540,133.3C600,128,660,160,720,197.3C780,235,840,277,900,277.3C960,277,1020,235,1080,229.3C1140,224,1200,256,1260,250.7C1320,245,1380,203,1410,181.3L1440,160L1440,320L1410,320C1380,320,1320,320,1260,320C1200,320,1140,320,1080,320C1020,320,960,320,900,320C840,320,780,320,720,320C660,320,600,320,540,320C480,320,420,320,360,320C300,320,240,320,180,320C120,320,60,320,30,320L0,320Z'/%3E%3C/svg%3E")`;
-
 export const STYLESHEET = `
 .tk-overlay, .tk-overlay * { margin: 0; padding: 0; box-sizing: border-box; }
 /* ── Appear/hide (owner 2026-07-21): opacity-only fades — transforms are deliberately avoided
@@ -54,26 +50,7 @@ export const STYLESHEET = `
   overflow: hidden;
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
-/* Decorative wave pinned to the card bottom (store customizer-container:after — 200px,
- * bottom-anchored, under the content, hidden on mobile). */
-.tk-modal::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 200px;
-  pointer-events: none;
-  background-color: var(--tk-panel, #e2e6ff);
-  -webkit-mask-image: ${WAVE_MASK};
-  mask-image: ${WAVE_MASK};
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: 50% 100%;
-  mask-position: 50% 100%;
-  -webkit-mask-size: 100%;
-  mask-size: 100%;
-}
+/* (The store's decorative bottom wave was removed by owner request, 2026-07-22 — A-08.) */
 
 /* ── SDK modal chrome (Charter §7.1, VP-04) — not part of the store card. ── */
 .tk-header {
@@ -400,8 +377,16 @@ export const STYLESHEET = `
 .tk-cutout-thumb:hover { border-color: var(--tk-primary, #a99cdf); }
 .tk-cutout-thumb:focus-visible { border: 2px solid var(--tk-primary, #a99cdf); outline: none; }
 .tk-cutout-thumb[aria-selected='true'] { border: 2px solid var(--tk-primary, #a99cdf); }
-/* Store pagination bullets: orange, 10px → 14px active (frames-pagination). */
-.tk-dots { display: flex; align-items: center; justify-content: center; gap: 6px; }
+/* Store pagination bullets: orange, 10px → 14px active (frames-pagination).
+ * Fixed height = the ACTIVE bullet size, so the bullet's smooth grow/shrink never
+ * shifts the Browse All button below (owner 2026-07-22). */
+.tk-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 14px;
+}
 .tk-dot {
   width: 10px;
   height: 10px;
@@ -538,6 +523,50 @@ export const STYLESHEET = `
 }
 .tk-frames-empty { color: #6b7280; text-align: center; margin: 40px 0; }
 
+/* ── Loading states (owner 2026-07-22): shimmer skeletons + canvas spinner. ── */
+@keyframes tk-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+.tk-skeleton {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.55) 25%,
+    rgba(255, 255, 255, 0.85) 50%,
+    rgba(255, 255, 255, 0.55) 75%
+  );
+  background-size: 200% 100%;
+  animation: tk-shimmer 1.4s ease-in-out infinite;
+}
+.tk-skeleton-chip { width: 72px; height: 27px; border-radius: var(--tk-radius-control, 10px); }
+.tk-skeleton-thumb {
+  flex: 0 0 calc(33.333% - 7px);
+  aspect-ratio: 3 / 4;
+  border-radius: var(--tk-radius-control, 10px);
+}
+.tk-canvas-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+@keyframes tk-spin { to { transform: rotate(360deg); } }
+.tk-spinner {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 4px solid var(--tk-panel, #e2e6ff);
+  border-top-color: var(--tk-primary, #a99cdf);
+  animation: tk-spin 0.9s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tk-skeleton { animation: none; background: rgba(255, 255, 255, 0.7); }
+  .tk-spinner { animation-duration: 2.5s; }
+}
+
 /* Personalization text: store pet-name card (docs/13 §5.2) — centered column, native 16px
  * checkbox (no accent override — store ships the UA default), borderless white pill input. */
 .tk-text { align-items: center; gap: 8px; }
@@ -620,7 +649,6 @@ export const STYLESHEET = `
  *    store page container (contained-width ≤800px). ── */
 @media (max-width: ${MOBILE_BREAKPOINT_PX - 1}px) {
   .tk-modal { width: 100vw; height: 100vh; max-height: 100vh; border-radius: 0; box-shadow: none; }
-  .tk-modal::after { display: none; }
   .tk-body { flex-direction: column; padding: 20px; gap: 20px; }
   .tk-preview, .tk-controls { flex: 0 0 auto; width: 100%; }
   .tk-image-controls, .tk-text, .tk-cutouts { border-radius: var(--tk-radius-control, 10px); }
