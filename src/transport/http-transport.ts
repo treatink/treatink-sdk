@@ -1,11 +1,14 @@
 import { TreatinkError } from '../types.js';
-import type { Asset, Page, Product, Template } from '../types.js';
+import type { Asset, AssetRole, Page, Product, Template } from '../types.js';
 import type { ChannelInfo, PendingAsset, Transport, UploadAuthorization } from './transport.js';
-import { toPage, toProduct } from '../catalog/adapter.js';
+import { toPage, toProduct, toTemplate } from '../catalog/adapter.js';
 import { fromEnvelope, type ApiErrorEnvelope } from './errors.js';
 import type {
+  ArtworkFinalWire,
+  ArtworkPendingWire,
   CatalogPageWire,
   ChannelWire,
+  CutoutLabelWire,
   PageParamsWire,
   ProductWire,
   VariantWire,
@@ -15,9 +18,9 @@ import type {
  * HttpTransport — the LIVE backend seam (docs/01 §4, docs/04 §1). Implements the `Transport`
  * interface against the real, documented endpoints so switching `mode: 'live'` swaps the
  * implementation and nothing above the transport changes (README: "fixtures and http must be
- * swap-equal"). P4-T01 wires the paths that exist today: `GET /v1/channel`, `/v1/catalog/products`,
- * `/v1/catalog/variants`. Asset upload (P4-T02) and live templates (P4-T03) land in later tasks and
- * throw a clear, parked error until then.
+ * swap-equal"). P4-T01 wired the catalog paths; P4-T02/T03 (2026-07-22, staging live) wire the
+ * two-step asset flow (declare → presigned PUT → finalize) and templates via
+ * `GET /v1/catalog/cutout-labels`.
  *
  * Contract (docs/04 §1, §2.8):
  * - Auth is `Authorization: Bearer <pk_…>` ONLY. **No channel header** — the tenant derives from the
@@ -101,30 +104,89 @@ export class HttpTransport implements Transport {
     return this.#joinProduct(variant, familyById);
   }
 
-  /* ── Parked until their tasks (assets: P4-T02; templates: P4-T03) ── */
+  /* ── Templates (P4-T03): live cutout-labels ARE the templates (docs/04 §2.5). ── */
 
-  listTemplates(): Promise<Page<Template>> {
-    return Promise.reject(
-      new TreatinkError('bad_request', 'live templates are wired in P4-T03; use fixtures mode'),
+  async listTemplates(params: { sku: string } & PageParamsWire): Promise<Page<Template>> {
+    // The live catalog serves cutout-labels globally — there is no per-SKU filter on the wire;
+    // `sku` is accepted for Transport parity (fixtures behave the same, docs/04 §2.5).
+    const page = await this.#getJson<CatalogPageWire<CutoutLabelWire>>(
+      '/v1/catalog/cutout-labels' +
+        toQuery({
+          ...(params.limit !== undefined ? { limit: params.limit } : {}),
+          ...(params.cursor !== undefined ? { cursor: params.cursor } : {}),
+        }),
     );
+    return toPage(page, toTemplate);
   }
 
-  declareAsset(): Promise<PendingAsset> {
-    return Promise.reject(
-      new TreatinkError('bad_request', 'live asset upload is wired in P4-T02; use fixtures mode'),
-    );
+  /* ── Assets (P4-T02): the real two-step flow — declare → PUT → finalize (docs/08 §6). ── */
+
+  async declareAsset(input: {
+    role: AssetRole;
+    contentType: string;
+    sizeBytes: number;
+    sha256: string;
+  }): Promise<PendingAsset> {
+    const wire = await this.#postJson<ArtworkPendingWire>('/v1/assets', {
+      role: input.role,
+      content_type: input.contentType,
+      size_bytes: input.sizeBytes,
+      sha256: input.sha256,
+    });
+    return {
+      id: wire.id,
+      role: wire.role,
+      status: 'pending',
+      pendingExpiresAt: wire.pending_expires_at,
+      upload: {
+        method: 'PUT',
+        url: wire.upload.url,
+        headers: wire.upload.headers,
+        expiresAt: wire.upload.expires_at,
+      },
+    };
   }
 
-  putAssetBytes(_upload: UploadAuthorization, _file: Blob): Promise<void> {
-    return Promise.reject(
-      new TreatinkError('bad_request', 'live asset upload is wired in P4-T02; use fixtures mode'),
-    );
+  async putAssetBytes(upload: UploadAuthorization, file: Blob): Promise<void> {
+    // Direct browser → object storage with exactly the presigned headers. NOT the API host — no
+    // Authorization, no envelope; failures surface as SDK-local upload_failed (docs/08 §6b).
+    let response: Response;
+    try {
+      response = await this.#fetch(upload.url, {
+        method: 'PUT',
+        headers: upload.headers,
+        body: file,
+      });
+    } catch (cause) {
+      throw new TreatinkError('upload_failed', 'The upload could not reach storage.', { cause });
+    }
+    if (!response.ok) {
+      throw new TreatinkError(
+        'upload_failed',
+        `The storage upload failed (HTTP ${response.status}).`,
+        {
+          status: response.status,
+        },
+      );
+    }
   }
 
-  finalizeAsset(_assetId: string): Promise<Asset> {
-    return Promise.reject(
-      new TreatinkError('bad_request', 'live asset upload is wired in P4-T02; use fixtures mode'),
+  async finalizeAsset(assetId: string): Promise<Asset> {
+    // Finalize REQUIRES an empty body (personalization_media require_empty_body) — no payload,
+    // no Content-Type.
+    const wire = await this.#postJson<ArtworkFinalWire>(
+      `/v1/assets/${encodeURIComponent(assetId)}/finalize`,
+      null,
     );
+    return {
+      id: wire.id,
+      role: wire.role,
+      status: 'final',
+      contentType: wire.content_type,
+      width: wire.width,
+      height: wire.height,
+      sha256: wire.sha256,
+    };
   }
 
   /* ── Internals ── */
@@ -177,6 +239,32 @@ export class HttpTransport implements Transport {
       }
       throw error;
     }
+  }
+
+  /** POST with envelope→error mapping. NOT retried (declare/finalize create/advance state;
+   *  finalize is idempotent server-side, but the caller owns retry policy). `body: null` sends an
+   *  EMPTY body with no Content-Type (finalize requires it). */
+  async #postJson<T>(path: string, body: Record<string, unknown> | null): Promise<T> {
+    const url = `${this.#baseUrl}${path}`;
+    let response: Response;
+    try {
+      response = await this.#fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.#apiKey}`, // NO channel header (docs/04 §2.8)
+          ...(body !== null ? { 'Content-Type': 'application/json' } : {}),
+        },
+        ...(body !== null ? { body: JSON.stringify(body) } : {}),
+      });
+    } catch (cause) {
+      throw new TreatinkError('service_unavailable', 'The request could not reach the API.', {
+        cause,
+      });
+    }
+    if (response.ok) {
+      return (await response.json()) as T;
+    }
+    throw await this.#toError(response);
   }
 
   async #toError(response: Response): Promise<TreatinkError> {

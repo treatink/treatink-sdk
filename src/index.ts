@@ -85,8 +85,8 @@ export const Treatink = {
                   theme: resolved.theme,
                   emit: (event, payload) => bus.emit(event, payload),
                   maxPersonalizationLength: resolved.maxPersonalizationLength,
-                  // Off the active transport: live catalog works (P4-T01); live templates/uploads
-                  // reject with their parked notice until P4-T03/T02 wire them.
+                  // Off the active transport — catalog, templates, and the two-step asset
+                  // upload all run live (P4-T01/T02/T03) or against fixtures, swap-equal.
                   listTemplates: (params) => transport.listTemplates(params),
                   getProduct: (sku) => transport.getProduct(sku),
                   uploadArtwork: (input) => createArtworkApi(transport).upload(input),
