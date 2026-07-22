@@ -10,11 +10,16 @@ pet-name text) plus a typed, publishable-key API client.
 
 ## Install
 
+> **Not yet published.** `@treatink/sdk` is not on npm yet — the command below is what the first
+> public release will look like. Until then, work from this repo: `npm install && npm run build`
+> produces the package in `dist/` (usable via `npm link` or a file: dependency).
+
 ```sh
-npm install @treatink/sdk
+npm install @treatink/sdk   # after the first public release
 ```
 
-A script-tag build (CDN + SRI-pinned) is also available for storefronts without a build step.
+A script-tag build (CDN + SRI-pinned) will ship alongside the npm release for storefronts without
+a build step.
 
 ## Quickstart
 
@@ -49,25 +54,23 @@ const order = await submitOrder(payload, {
 
 ## Documentation
 
-- **[Integration guide](./docs/12-integration-quickstart.md)** — install, the copy-runnable client
-  flow, order building & submission, CSP & SRI, privacy disclosure, theming, and the full API
-  reference. The fixtures-mode sample is CI-tested on every build — the sample you copy is the
-  sample we test.
-- **[Public types](./docs/10-public-types.md)** — the frozen TypeScript surface.
+| Read this | When you need |
+| --- | --- |
+| [Integration guide](./docs/12-integration-quickstart.md) | The full copy-runnable flow: init → designer → cart line → order body → server submit, plus CSP/SRI snippets and the API reference. CI runs the exact sample on every build. |
+| [Public types](./docs/10-public-types.md) | Every public TypeScript type — config, namespaces, `DesignerResult`, `DraftRecord`, errors, theme & copy keys. |
+| [Security model](./docs/11-security.md) | Key handling, photo privacy guarantees, CSP recommendations, what the build gates enforce. |
+| [API reconciliation](./docs/04-api-reconciliation.md) | How SDK calls map to the real `treatinkapi.com/v1` wire contract, endpoint by endpoint. |
 
-## Privacy & security by design
+Key facts worth knowing up front:
 
-- **Shopper photos never leave your control silently.** The photo uploads **only to Treatink
-  infrastructure**, over TLS, and **only when the shopper saves** — nothing is sent while editing.
-- **Zero third-party requests.** No analytics, trackers, or external fonts — enforced by an
-  automated gate on every build.
-- **No image bytes on the device.** Saved drafts are references only (asset ids + layout metadata),
-  never photo data. `tk.drafts.clear()` wipes them for shared devices.
-- **No secret keys in the browser.** The browser bundle is publishable-key only; `submitOrder`
-  lives in a separate server-only entry, and a build gate proves no secret-key path can be bundled
-  into browser code.
-- **Fully themeable.** Colors, radii, and every user-visible string are overridable via `theme` and
-  `copy` — no iframes, no locked-in look.
+- **Keys:** browser code takes publishable `pk_…` keys only (`sk_…` throws `key_scope_violation`);
+  the single secret-key operation (`submitOrder`) lives in the separate `@treatink/sdk/server`
+  entry, and a build gate proves no secret-key path exists in the browser bundle.
+- **Photos:** upload only to Treatink infrastructure, over TLS, and only when the shopper saves.
+  Drafts store references (asset ids + layout), never image bytes; `tk.drafts.clear()` wipes them.
+- **Network:** zero third-party requests — no analytics, trackers, or external fonts (gated in CI).
+- **Theming:** colors, radii, and every visible string are overridable via `theme` and `copy`;
+  accepted photo formats are PNG/JPEG/HEIC up to 25 MB, 12,000 px per side.
 
 ## Demo
 
