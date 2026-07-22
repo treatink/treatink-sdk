@@ -33,7 +33,7 @@ storage-bucket CORS — GAP-PLAN "Out of scope") and **park** until the backend 
 
 ## Cross-cutting rules (all phases)
 
-- **Ground-truth priority** (`README.md`): store code > Charter scope > live API > Appendix D.
+- **Ground-truth priority** (`BLUEPRINT.md`): store code > Charter scope > live API > Appendix D.
 - **Fixtures-first**: build against `FixtureTransport`; `HttpTransport` is P4.
 - **Every task carries its gate**; no advance without green; blockers get parked (`AGENTS.md` §5).
 - **Budgets & security are gates**, not aspirations (`docs/06` §2, §6).

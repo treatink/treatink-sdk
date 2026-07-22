@@ -1,55 +1,86 @@
-# Treatink Customizer SDK — Build Blueprint
+# Treatink Customizer SDK
 
-This repository will become **`@treatink/sdk`**: a TypeScript/JavaScript library that third-party
-websites embed to add Treatink product personalization to their storefronts. It replaces the
-current iframe prototype with a native, embedded modal designer plus a typed, publishable-key API
-client.
+**`@treatink/sdk`** — a TypeScript/JavaScript library that storefronts embed to add Treatink
+product personalization: a native modal designer (photo upload, cutout selection, positioning,
+pet-name text) plus a typed, publishable-key API client.
 
-**Right now this repo contains no product code — it contains the blueprint an AI agent (or a
-human) follows to build the SDK, phase by phase, under an automated execute-and-verify loop.**
+> **Status:** pre-release, private. The SDK runs end-to-end in **fixtures mode** (no backend, no
+> network, deterministic ids) — the default until the live API wiring ships. Live catalog + order
+> submission paths exist behind `mode: 'live'`.
 
-## Read these in order
+## Install
 
-1. **[`AGENTS.md`](./AGENTS.md)** — the loop contract. How work is picked, done, verified,
-   committed, and when to stop. **Every agent reads this first, every iteration.**
-2. **[`STATE.md`](./STATE.md)** — the progress ledger. The loop's memory: what's done, what's
-   next, what's blocked.
-3. **[`docs/`](./docs)** — the durable knowledge base (read on demand, linked from tasks):
-   - [`01-architecture.md`](./docs/01-architecture.md) — modules, dependency direction, boundaries
-   - [`02-conventions.md`](./docs/02-conventions.md) — coding standards, TS rules, error model
-   - [`03-workflow.md`](./docs/03-workflow.md) — the execute-and-verify loop in full detail
-   - [`04-api-reconciliation.md`](./docs/04-api-reconciliation.md) — **brief vs. live API**, per field, with gated dependencies
-   - [`05-engine-reference.md`](./docs/05-engine-reference.md) — customizer math, pinned to the real `treatink` store code
-   - [`06-testing-and-gates.md`](./docs/06-testing-and-gates.md) — every acceptance gate command + threshold
-   - [`07-glossary.md`](./docs/07-glossary.md) — vocabulary
-4. **[`phases/`](./phases)** — the executable plans:
-   - [`00-overview.md`](./phases/00-overview.md) — roadmap, phase graph, dependencies
-   - [`01-core.md`](./phases/01-core.md) → [`04-live-and-pilot.md`](./phases/04-live-and-pilot.md)
+```sh
+npm install @treatink/sdk
+```
 
-## Ground truth, in priority order
+A script-tag build (CDN + SRI-pinned) is also available for storefronts without a build step.
 
-When two sources disagree, the higher one wins. This ordering is a **project decision** (owner:
-Mark, 2026-07-20) and is the single most important rule in this blueprint:
+## Quickstart
 
-| Priority | Source | Authoritative for |
-|---|---|---|
-| 1 | **The `treatink` store customizer code** (`../treatink/web/src/components/customizer/…`) | All customizer **math, rendering, and logic** — positioning, scale, pet-name placement, canvas/export |
-| 2 | **`Treatink_SDK_Design_Brief_and_Charter_2.md`** (the Charter) | **Scope & product decisions** — which features ship in MVP, public API shape, upload-on-save, references-only storage, packaging |
-| 3 | **The `treatink-api` repo** (`../treatink-api`, FastAPI/PostgreSQL) | The **currently-real backend wire contract** (asset-based, no sessions, no orders). Read from source; supersedes the public `api-docs.treatink.com` where they differ. Gaps and how they're filled are in [`GAP-PLAN.md`](./GAP-PLAN.md) |
-| 4 | **Charter Appendix D** (Shopify prototype math) | Intent only. **Where it disagrees with (1), (1) wins.** |
+```ts
+import { Treatink } from '@treatink/sdk';
 
-See also **[`GAP-PLAN.md`](./GAP-PLAN.md)** — the gap-filling plan: bare-minimum backend additions
-(order intake, storage CORS) plus all SDK-side work to reach a complete, buildable blueprint; and
-[`docs/04`](./docs/04-api-reconciliation.md) for the field-by-field reconciliation.
+const tk = Treatink.init({
+  apiKey: 'pk_test_quickstart', // publishable key only — sk_… keys throw
+  channel: 'rileyspets.com',
+  mode: 'fixtures',
+});
 
-> The Charter is a *brief*: excellent for intent and scope, but it idealizes some technical
-> details (notably a zone-remapped cutout engine and a sessions-based save pipeline) that do not
-> match either the real store code or the live API. Those divergences are catalogued, not guessed.
+tk.designer.open({
+  sku: 'SSGTTBC',
+  onComplete(result) {
+    // shopper saved — keep result.draftId for the cart line, result.previewUrl for the thumbnail
+  },
+});
+```
 
-## The one principle behind everything here
+At checkout, `tk.orders.buildPayload(...)` assembles the order body in the browser (nothing
+secret), and your server submits it with the one secret-key operation:
 
-> **Every task ends in an objective, machine-checkable gate. The loop advances only on green —
-> never on the model's judgment.**
+```ts
+import { submitOrder } from '@treatink/sdk/server';
 
-If a gate cannot be made to pass (e.g. it depends on a live endpoint that does not exist yet),
-the loop **parks** on it and records a blocker, rather than declaring success. See `AGENTS.md`.
+const order = await submitOrder(payload, {
+  secretKey: process.env.TREATINK_SECRET_KEY,
+  channel: 'rileyspets.com',
+});
+```
+
+## Documentation
+
+- **[Integration guide](./docs/12-integration-quickstart.md)** — install, the copy-runnable client
+  flow, order building & submission, CSP & SRI, privacy disclosure, theming, and the full API
+  reference. The fixtures-mode sample is CI-tested on every build — the sample you copy is the
+  sample we test.
+- **[Public types](./docs/10-public-types.md)** — the frozen TypeScript surface.
+
+## Privacy & security by design
+
+- **Shopper photos never leave your control silently.** The photo uploads **only to Treatink
+  infrastructure**, over TLS, and **only when the shopper saves** — nothing is sent while editing.
+- **Zero third-party requests.** No analytics, trackers, or external fonts — enforced by an
+  automated gate on every build.
+- **No image bytes on the device.** Saved drafts are references only (asset ids + layout metadata),
+  never photo data. `tk.drafts.clear()` wipes them for shared devices.
+- **No secret keys in the browser.** The browser bundle is publishable-key only; `submitOrder`
+  lives in a separate server-only entry, and a build gate proves no secret-key path can be bundled
+  into browser code.
+- **Fully themeable.** Colors, radii, and every user-visible string are overridable via `theme` and
+  `copy` — no iframes, no locked-in look.
+
+## Demo
+
+A full mock storefront (product grid → designer modal → cart) ships in this repo — see
+[Development](#development) to run it locally. A hosted demo is planned for the public release.
+
+## Development
+
+Working on the SDK itself? Clone the repo, `npm install`, then `npm run dev` and open
+<http://localhost:5199/demo/storefront.html>. `npm run verify` runs the main gates
+(typecheck + lint + tests + bundle budgets).
+
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md) — commands, repo layout, commit conventions
+- [`BLUEPRINT.md`](./BLUEPRINT.md) — the build blueprint and ground-truth priority order
+- [`AGENTS.md`](./AGENTS.md) / [`STATE.md`](./STATE.md) — the automated build loop and its ledger
+- [`RELEASING.md`](./RELEASING.md) — release process

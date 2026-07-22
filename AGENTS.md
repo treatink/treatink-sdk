@@ -14,7 +14,7 @@ progress lives in [`STATE.md`](./STATE.md).
 
 1. **Gates decide "done," not you.** A task is complete only when its acceptance-gate command
    exits 0 and meets its stated threshold. Never mark a task done because the code "looks right."
-2. **Respect the ground-truth priority order** (see [`README.md`](./README.md)). Store code >
+2. **Respect the ground-truth priority order** (see [`BLUEPRINT.md`](./BLUEPRINT.md)). Store code >
    Charter scope > live API > Appendix D. When in doubt, cite the source you followed in the commit.
 3. **One task, one commit.** Small, atomic, reversible. The commit message names the task ID.
 4. **Never fake a gate.** Do not weaken a threshold, skip a test, `xit`/`.skip`, or stub an

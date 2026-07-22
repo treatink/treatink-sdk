@@ -61,7 +61,7 @@ unworkable, that's a reviewed decision edit here, not an ad-hoc swap.
 
 ## Engine / model decisions (already fixed elsewhere — cross-index)
 
-- Customizer math = store code, not Appendix D (`docs/05`, `README` priority table).
+- Customizer math = store code, not Appendix D (`docs/05`, `BLUEPRINT.md` priority table).
 - Single 900×1200 canvas; composite = `toBlob()`; cutout PNG alpha is the mask (`docs/05` §0).
 - Asset roles: `source` = original photo, `rendered` = print composite (`docs/04` §2.3, GP-03).
 - Two-step upload: declare → presigned PUT → finalize (`docs/04`, GP-04).

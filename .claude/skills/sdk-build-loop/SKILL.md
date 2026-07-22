@@ -14,7 +14,7 @@ once per invocation) until a stop condition.
 
 1. Read [`AGENTS.md`](../../../AGENTS.md) — the rules. Re-read every iteration; do not cache from memory.
 2. Read [`STATE.md`](../../../STATE.md) — current phase, statuses, blockers, next runnable.
-3. Honor the **ground-truth priority** (`README.md`): store code > Charter scope > live API >
+3. Honor the **ground-truth priority** (`BLUEPRINT.md`): store code > Charter scope > live API >
    Appendix D. Cite the source you follow.
 
 ## One iteration

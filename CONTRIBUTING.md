@@ -16,6 +16,18 @@ optional body. Task: <TASK_ID>. Gate: <cmd> -> pass
 - **Never** add `Co-Authored-By:` or any Claude/Anthropic attribution. Commits are authored solely
   by the repo owner (git-config identity). Hard rule.
 
+## Repository layout
+
+| Path | What it is |
+|---|---|
+| `src/` | SDK source — `api/`, `catalog/`, `cutout-engine/` (DOM-free math), `designer/`, `drafts/`, `media/`, `save/`, `transport/` (each with its own README) |
+| `demo/` | The mock storefront page (`npm run dev` → `http://localhost:5199/demo/storefront.html`) |
+| `fixtures/` | The bundled fixture dataset — the contract the SDK is built and tested against |
+| `test/` | Unit, golden-image, and Playwright e2e suites |
+| `server/` | Server-only entry (`submitOrder`, secret key) |
+| `docs/` | Knowledge base: architecture, conventions, API reconciliation, gates, quickstart |
+| `phases/`, `STATE.md` | The build plan and progress ledger |
+
 ## Local commands (gates)
 ```
 npm run typecheck     # tsc --noEmit, strict
@@ -30,6 +42,6 @@ npm run verify        # typecheck + lint + test + size
 ```
 
 ## Ground rules (see docs/)
-- Store code > Charter scope > live API > Appendix D (`README.md` priority table).
+- Store code > Charter scope > live API > Appendix D (`BLUEPRINT.md` priority table).
 - Fixtures-first; the cutout-engine stays DOM-free; no image bytes persisted; no third-party requests;
   no secret key in the browser build.

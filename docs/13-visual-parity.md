@@ -308,7 +308,7 @@ so "faithful" has an exact meaning; anything NOT listed is ported as-is.
 
 Palette, typography, geometry, spacing, radii, shadows, transitions (§1–§6); the feature set
 (§ intro deltas); all engine math (`docs/05` — golden-tested, includes the store's axis-aligned
-hit-test even for rotated photos: the store is ground truth for math per `README` priority order);
+hit-test even for rotated photos: the store is ground truth for math per `BLUEPRINT.md` priority order);
 the rendered slider look; copy defaults; empty-state behavior; auto-preselected default cutout.
 
 ### 10.2 Improve (with the store defect cited)

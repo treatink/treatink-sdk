@@ -47,4 +47,4 @@ listed with the SDK's chosen term in **bold**.
   (`docs/06` §3).
 - **Gate** — an objective pass/fail command that decides "done." The loop advances only on green.
 - **The Charter** — `Treatink_SDK_Design_Brief_and_Charter_2.md`. Authoritative for scope/product;
-  a *brief*, so superseded on technical math by the store code (`README.md` priority table).
+  a *brief*, so superseded on technical math by the store code (`BLUEPRINT.md` priority table).

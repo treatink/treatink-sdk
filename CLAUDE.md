@@ -1,13 +1,15 @@
 # CLAUDE.md
 
-This repository is a **build blueprint** for `@treatink/sdk`, not the SDK itself (yet).
+This repository is `@treatink/sdk`, built phase-by-phase from a **build blueprint** under an
+automated execute-and-verify loop.
 
 **Before doing anything, read [`AGENTS.md`](./AGENTS.md) — the loop contract — then
-[`STATE.md`](./STATE.md).** Everything you need is linked from [`README.md`](./README.md).
+[`STATE.md`](./STATE.md).** Everything you need is linked from [`BLUEPRINT.md`](./BLUEPRINT.md).
+(`README.md` is the partner/developer-facing SDK readme, not the build entry point.)
 
 ## The rules that matter most
 
-1. **Ground-truth priority** (`README.md`): the real `treatink` store customizer code wins on all
+1. **Ground-truth priority** (`BLUEPRINT.md`): the real `treatink` store customizer code wins on all
    math/logic; the Charter wins on scope; the live API is the real wire contract; Appendix D is
    intent only.
 2. **Gates decide "done."** Advance only when a task's acceptance-gate command passes. Never fake,
@@ -18,6 +20,7 @@ This repository is a **build blueprint** for `@treatink/sdk`, not the SDK itself
 
 ## Where things are
 
+- `BLUEPRINT.md` — the build blueprint: reading order + ground-truth priority table
 - `AGENTS.md` — how the automated loop works (read every iteration)
 - `STATE.md` — progress ledger (the loop's memory)
 - `docs/` — architecture, conventions, workflow, API reconciliation, engine reference, gates, glossary
