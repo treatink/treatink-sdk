@@ -28,6 +28,8 @@ import type { SaveControl } from './controls/save.js';
 import { mountText } from './controls/text.js';
 import type { TextControl } from './controls/text.js';
 import { ensureLabelFont } from './font.js';
+import { MOBILE_BREAKPOINT_PX } from './styles.js';
+import { createIcon } from './icons.js';
 import { PET_NAME_POSITIONS } from '../cutout-engine/index.js';
 import { TreatinkError } from '../types.js';
 import type {
@@ -100,6 +102,10 @@ interface ActiveDesigner {
   restoredTransform: DraftRecord['transform'] | null;
   /** Spinner over the canvas until the first cutout renders (removed once, then null). */
   canvasLoading: HTMLElement | null;
+  /** The shared message section (owner 2026-07-22): showMessage/clearMessage + cleanup. */
+  showMessage: (kind: 'upload' | 'save' | 'generic', text: string) => void;
+  clearMessage: () => void;
+  disposeMessages: () => void;
 }
 
 /** Browser EngineEnv: DOM canvas + toBlob, injected at the edge (docs/01 §6). */
@@ -149,6 +155,7 @@ function canSave(state: ActiveDesigner): boolean {
  * rendered, real ast_ ids) → local previewUrl → onComplete → close. Asset-based, no sessions.
  */
 async function save(state: ActiveDesigner): Promise<void> {
+  state.clearMessage(); // fresh attempt, fresh slate
   const { photo, editor, cutout, options } = state;
   if (!photo || !editor || !cutout) {
     throw new TreatinkError('bad_request', 'Add a photo and choose a cutout before saving.');
@@ -313,6 +320,7 @@ function deletePhoto(state: ActiveDesigner): void {
 function acceptPhoto(state: ActiveDesigner, photo: LoadedPhoto): void {
   if (state.photo) URL.revokeObjectURL(state.photo.objectUrl);
   state.photo = photo;
+  state.clearMessage(); // a successful ingest clears any prior error (owner 2026-07-22)
   state.upload?.setVisible(false); // the empty-state overlay yields to the photo (docs/13 §4)
   state.imageControls?.setVisible(true);
   state.cutouts?.setPhoto(photo.objectUrl); // thumbs live-preview the photo behind each frame
@@ -393,6 +401,22 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
   frame.appendChild(canvasLoading);
   handles.preview.appendChild(frame);
 
+  // Shared message section (owner 2026-07-22): one place for ingest/save/generic errors —
+  // desktop: above the pet-name card; mobile: right above the canvas (relocated on breakpoint).
+  const messages = document.createElement('div');
+  messages.className = 'tk-messages';
+  messages.hidden = true;
+  const messageText = document.createElement('p');
+  messageText.className = 'tk-message';
+  messageText.setAttribute('role', 'alert');
+  const messageDismiss = document.createElement('button');
+  messageDismiss.type = 'button';
+  messageDismiss.className = 'tk-message-dismiss';
+  messageDismiss.setAttribute('aria-label', copy.closeLabel);
+  messageDismiss.appendChild(createIcon(document, 'x', 16));
+  messages.append(messageText, messageDismiss);
+  handles.controls.appendChild(messages); // provisional spot; placeMessages() refines below
+
   const state: ActiveDesigner = {
     handles,
     options,
@@ -421,7 +445,23 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
     mockup: null,
     restoredTransform: draft?.transform ?? null,
     canvasLoading,
+    showMessage: (kind, text) => {
+      messageText.className =
+        kind === 'upload'
+          ? 'tk-message tk-upload-error'
+          : kind === 'save'
+            ? 'tk-message tk-save-error'
+            : 'tk-message';
+      messageText.textContent = text;
+      messages.hidden = false;
+    },
+    clearMessage: () => {
+      messages.hidden = true;
+      messageText.textContent = '';
+    },
+    disposeMessages: () => undefined, // replaced below once the media listener exists
   };
+  messageDismiss.addEventListener('click', () => state.clearMessage());
   active = state;
 
   // Product (variant+family) backs the display-composite preview; failures are non-fatal —
@@ -454,6 +494,9 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
   const surfaceError = (error: TreatinkError) => {
     options.onError?.(error);
     context.emit('error', error);
+    // Ingest errors keep the .tk-upload-error marker class; everything else is generic.
+    const uploadCodes = ['unsupported_file_type', 'upload_too_large', 'upload_validation_failed'];
+    state.showMessage(uploadCodes.includes(error.code) ? 'upload' : 'generic', error.message);
   };
   if (draftMissing) {
     // Unknown/expired draftId: surface not_found; the modal continues as a fresh design.
@@ -512,6 +555,19 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
       },
     },
   );
+  // Message placement: desktop = above the pet-name card; mobile = above the canvas.
+  const mobileQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT_PX - 1}px)`);
+  const placeMessages = () => {
+    if (mobileQuery.matches) {
+      handles.preview.insertBefore(messages, frame);
+    } else if (state.textControl) {
+      handles.controls.insertBefore(messages, state.textControl.root);
+    }
+  };
+  placeMessages();
+  mobileQuery.addEventListener('change', placeMessages);
+  state.disposeMessages = () => mobileQuery.removeEventListener('change', placeMessages);
+
   state.cutouts = mountCutouts(
     document,
     handles.controls,
@@ -536,7 +592,11 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
 
   state.save = mountSave(document, handles.controls, copy, {
     onSave: () => save(state),
-    onError: surfaceError,
+    onError: (error) => {
+      options.onError?.(error);
+      context.emit('error', error);
+      state.showMessage('save', copy.saveErrorRetry); // friendly retry copy, .tk-save-error marker
+    },
   });
 
   // If templates never arrive (load error), drop the canvas spinner — the error is surfaced.
@@ -566,6 +626,7 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
 export function closeDesigner(): void {
   if (!active) return;
   const { handles, options, context, photo } = active;
+  active.disposeMessages();
   active = null;
   if (photo) URL.revokeObjectURL(photo.objectUrl);
   handles.unmount();

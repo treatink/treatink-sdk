@@ -163,7 +163,6 @@ export const STYLESHEET = `
   cursor: pointer;
   transition: 0.3s;
 }
-.tk-upload-error { color: #b3261e; margin-top: 8px; font-size: 14px; }
 @media (max-width: ${MOBILE_BREAKPOINT_PX - 1}px) {
   .tk-upload-overlay { bottom: 35%; } /* store ≤700px override */
   .tk-upload-button { padding: 10px 15px; } /* store default-btn mobile padding */
@@ -630,7 +629,31 @@ export const STYLESHEET = `
 .tk-save-button:hover:not(:disabled) { background: var(--tk-accent-hover, #dd9133); }
 .tk-save-button:disabled { opacity: 0.3; cursor: default; }
 .tk-save-button svg[hidden] { display: none; } /* arrow hides while saving (store) */
-.tk-save-error { color: #b3261e; margin-top: 8px; font-size: 14px; }
+
+/* ── Message section (owner 2026-07-22): one slot for ingest/save/generic errors. ── */
+.tk-messages {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  background: #fdecea;
+  color: #b3261e;
+  border-radius: var(--tk-radius-control, 10px);
+  padding: 10px 14px;
+  font-size: 14px;
+  line-height: 20px;
+}
+.tk-messages[hidden] { display: none; }
+.tk-message { flex: 1 1 auto; }
+.tk-message-dismiss {
+  flex: 0 0 auto;
+  display: inline-flex;
+  background: none;
+  border: none;
+  padding: 2px;
+  color: inherit;
+  cursor: pointer;
+}
 
 .tk-visually-hidden {
   position: absolute;

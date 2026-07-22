@@ -346,4 +346,7 @@ pixel beyond its row's stated intent, that's a spec bug: stop and re-check again
 | A-07 | Cutout-browser loading skeletons (2026-07-22) | Shimmer chip pills + a 3-up thumb row mirroring the loaded layout; Browse All hidden until templates arrive; cleared on load error. |
 | A-08 | Bottom wave removed (2026-07-22) | The store's decorative `customizer-container:after` wave is not rendered. |
 | A-09 | Stable pagination-dots container (2026-07-22) | `.tk-dots` fixed at the active-bullet height (14px) so the bullet grow animation never shifts the Browse All button. |
+| A-11 | Message section (2026-07-22) | One error slot for ingest/save/generic errors (`tk-messages`, dismissible, role=alert): desktop above the pet-name card, mobile right above the canvas; replaces the inline upload/save error lines. |
+| A-12 | Whole-canvas click-to-pick (2026-07-22) | In the empty state, clicking anywhere on the canvas frame opens the file picker (store: button only). |
+| A-13 | Wire-consistent ingest rules (2026-07-22) | Accepted formats = backend allowlist png/jpeg (+HEIC via transcode; webp/gif now rejected at ingest); 25 MB client cap; backend decode bounds pre-checked (12,000 px/side, 50 MP). |
 | A-10 | Canvas loading shimmer (2026-07-22) | Full-frame lavender shimmer (same blink as the cutout skeletons) until the first cutout or photo renders; timed fallback removal if templates fail. |

@@ -127,6 +127,40 @@ test('oversize file (>25 MB) is rejected with upload_too_large before any proces
   await expect(page.locator('.tk-canvas')).not.toHaveAttribute('data-natural-width', /.+/);
 });
 
+test('clicking anywhere on the empty canvas opens the picker (owner 2026-07-22)', async ({
+  page,
+}) => {
+  const clicked = await page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const input = document.querySelector<HTMLInputElement>('.tk-file-input')!;
+        input.addEventListener(
+          'click',
+          (e) => {
+            e.preventDefault();
+            resolve(true);
+          },
+          { once: true },
+        );
+        document
+          .querySelector('.tk-canvas-frame')!
+          .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        setTimeout(() => resolve(false), 500);
+      }),
+  );
+  expect(clicked).toBe(true);
+});
+
+test('webp is rejected (backend accepts png/jpeg only)', async ({ page }) => {
+  await page.setInputFiles('.tk-file-input', {
+    name: 'photo.webp',
+    mimeType: 'image/webp',
+    buffer: Buffer.from('RIFF....WEBP'),
+  });
+  await expect(page.locator('.tk-upload-error')).toBeVisible();
+  await expect(page.locator('.tk-upload-error')).toContainText('PNG, JPEG, or HEIC');
+});
+
 test('a failed upload can be retried with a valid photo', async ({ page }) => {
   await page.setInputFiles('.tk-file-input', {
     name: 'notes.txt',

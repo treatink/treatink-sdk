@@ -7,8 +7,9 @@ import type { CopyStrings } from '../../types.js';
 /**
  * Photo input (P2-T05 → P5-T03, docs/13 §4): the store's on-canvas empty state — upload icon +
  * two-line prompt + purple "Or Select Image" pill, overlaid on the canvas frame; the FRAME is the
- * drop target (store PetCustomizer.jsx:606-666). Validation + EXIF-upright ingest unchanged.
- * Errors surface inline (.tk-upload-error) AND flow to onError/'error' via the callback.
+ * drop target AND (empty state) a click-to-pick surface (store PetCustomizer.jsx:606-666).
+ * Formats/limits mirror the backend (media/exif.ts). Errors flow to onError — the designer's
+ * message section displays them (owner 2026-07-22).
  */
 
 export interface UploadHooks {
@@ -18,8 +19,6 @@ export interface UploadHooks {
 
 export interface UploadControl {
   root: HTMLElement;
-  /** Show/clear the inline error line. */
-  setError(message: string | null): void;
   /** Toggle the empty-state overlay (hidden once a photo is accepted; back after delete). */
   setVisible(visible: boolean): void;
 }
@@ -65,7 +64,8 @@ export function mountUpload(
 
   const input = doc.createElement('input');
   input.type = 'file';
-  input.accept = 'image/*';
+  // Backend-consistent formats only (media/exif.ts WIRE_CONTENT_TYPES + HEIC via transcode).
+  input.accept = 'image/png,image/jpeg,image/heic,image/heif,.heic,.heif';
   input.className = 'tk-file-input tk-visually-hidden';
   input.setAttribute('aria-label', copy.uploadButton);
   input.tabIndex = -1; // keyboard users go through the visible button; the input is its proxy
@@ -76,14 +76,8 @@ export function mountUpload(
   button.textContent = copy.uploadButton;
   button.addEventListener('click', () => input.click());
 
-  const error = doc.createElement('p');
-  error.className = 'tk-upload-error';
-  error.setAttribute('role', 'alert');
-  error.hidden = true;
-
   const ingest = async (file: File | null | undefined) => {
     if (!file) return;
-    setError(null);
     try {
       // HEIC transcodes to JPEG first (lazy decoder chunk, P2-T06). Size-check the ORIGINAL
       // before decoding; the decoded JPEG then flows through the normal ingest validation.
@@ -98,8 +92,7 @@ export function mountUpload(
         cause instanceof TreatinkError
           ? cause
           : new TreatinkError('unsupported_file_type', copy.genericError, { cause });
-      setError(err.message);
-      hooks.onError(err);
+      hooks.onError(err); // surfaces in the designer's message section (owner 2026-07-22)
     }
   };
 
@@ -107,23 +100,24 @@ export function mountUpload(
     void ingest(input.files?.[0]);
     input.value = ''; // allow re-selecting the same file
   });
-  // The whole canvas frame accepts drops, photo present or not (store wrapper onDrop).
+  // The whole canvas frame accepts drops, photo present or not (store wrapper onDrop) — and in
+  // the EMPTY state, clicking anywhere on the frame opens the picker (owner 2026-07-22). The
+  // button's own handler still fires for clicks on it; skip those to avoid a double dialog.
+  frame.addEventListener('click', (event) => {
+    if (overlay.hidden) return; // a photo is present — clicks are for dragging
+    if ((event.target as HTMLElement | null)?.closest('.tk-upload-button')) return;
+    input.click();
+  });
   frame.addEventListener('dragover', (event) => event.preventDefault());
   frame.addEventListener('drop', (event) => {
     event.preventDefault();
     void ingest(event.dataTransfer?.files?.[0]);
   });
 
-  function setError(message: string | null): void {
-    error.hidden = message === null;
-    error.textContent = message ?? '';
-  }
-
-  overlay.append(createUploadIcon(doc), prompt, button, error, input);
+  overlay.append(createUploadIcon(doc), prompt, button, input);
   frame.appendChild(overlay);
   return {
     root: overlay,
-    setError,
     setVisible(visible: boolean): void {
       overlay.hidden = !visible;
     },

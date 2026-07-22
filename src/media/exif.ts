@@ -10,19 +10,30 @@ import { TreatinkError } from '../types.js';
  * for MVP orientation.
  */
 
-/** Store guard semantics (useFileHandlers.js:19): images only, SVG rejected. */
+/**
+ * The backend's artwork allowlist (treatink-api personalization_media/service.py): assets may be
+ * `image/png` or `image/jpeg` ONLY. HEIC/HEIF is accepted at ingest because the SDK transcodes it
+ * to JPEG before it ever reaches the wire (media/heic.ts). Everything else — webp, gif, svg… —
+ * would pass a local canvas but 415 at declare, so it is rejected up front (owner 2026-07-22).
+ */
+export const WIRE_CONTENT_TYPES = ['image/png', 'image/jpeg'] as const;
+
 export function assertIngestableImage(file: Blob & { type: string }): void {
-  if (!file.type.startsWith('image/') || file.type === 'image/svg+xml') {
+  if (!(WIRE_CONTENT_TYPES as readonly string[]).includes(file.type)) {
     throw new TreatinkError(
       'unsupported_file_type',
-      `Unsupported file type '${file.type || 'unknown'}' — choose a photo (PNG, JPEG, or HEIC).`,
+      `Unsupported file type '${file.type || 'unknown'}' — choose a PNG, JPEG, or HEIC photo.`,
       { param: 'file' },
     );
   }
 }
 
-/** Client-side cap, mapped to the API's code/status (docs/02 §4). */
+/** Client-side cap, stricter than the API's 50 MB (docs/04 §2.3), mapped to its code/status. */
 export const MAX_INGEST_BYTES = 25_000_000;
+/** Backend decode bounds (service.py ARTWORK_MAX_DIMENSION / ARTWORK_MAX_PIXELS) — enforced
+ *  client-side so the shopper hears it at ingest, not at save. */
+export const MAX_INGEST_DIMENSION = 12_000;
+export const MAX_INGEST_PIXELS = 50_000_000;
 
 export function assertIngestableSize(file: Blob): void {
   if (file.size > MAX_INGEST_BYTES) {
@@ -30,6 +41,23 @@ export function assertIngestableSize(file: Blob): void {
       status: 413,
       param: 'file',
     });
+  }
+}
+
+export function assertIngestableDimensions(width: number, height: number): void {
+  if (width > MAX_INGEST_DIMENSION || height > MAX_INGEST_DIMENSION) {
+    throw new TreatinkError(
+      'upload_validation_failed',
+      `Photos can be at most ${MAX_INGEST_DIMENSION.toLocaleString('en-US')} px per side.`,
+      { param: 'file' },
+    );
+  }
+  if (width * height > MAX_INGEST_PIXELS) {
+    throw new TreatinkError(
+      'upload_validation_failed',
+      'This photo has too many pixels (max 50 megapixels).',
+      { param: 'file' },
+    );
   }
 }
 
@@ -60,6 +88,13 @@ export async function loadOrientedPhoto(file: Blob & { type: string }): Promise<
       param: 'file',
       cause,
     });
+  }
+  try {
+    // Backend decode bounds, checked at ingest (post-orientation dimensions).
+    assertIngestableDimensions(image.naturalWidth, image.naturalHeight);
+  } catch (error) {
+    URL.revokeObjectURL(objectUrl);
+    throw error;
   }
   return {
     image,

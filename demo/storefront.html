@@ -679,8 +679,9 @@
               openCart(true);
             },
             onError(err) {
+              // Errors now render inside the modal's message section — no alert (owner 2026-07-22).
               console.error('[designer error]', err.code, err.message);
-              alert(`Something went wrong: ${err.code}`);
+              console.warn('[treatink demo] designer error:', err.code, err.message);
             },
           });
         });
