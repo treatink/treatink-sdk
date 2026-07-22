@@ -409,7 +409,7 @@ export const STYLESHEET = `
   border: none;
   border-radius: var(--tk-radius-control, 10px);
   padding: 10px 20px;
-  font-weight: 500;
+  font-weight: 600; /* match .tk-upload-button (owner 2026-07-22) */
   font-size: 15px;
   cursor: pointer;
 }

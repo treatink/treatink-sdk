@@ -481,7 +481,7 @@
   <body>
     <header>
       <div class="header-inner">
-        <div class="logo"><span class="mark">🐾</span> TreatInk<small>SDK</small></div>
+        <div class="logo">TreatInk<small>SDK</small></div>
         <nav>
           <button class="cart-btn" id="open-cart">
             🛒 Cart <span class="cart-count" id="cart-count">0</span>
@@ -509,8 +509,12 @@
     </main>
 
     <footer class="site">
-      Demo storefront · <code>@treatink/sdk</code> in <code>mode: 'fixtures'</code> · every product,
-      price, image, frame and order payload below comes from the real SDK running locally.
+      Demo storefront · <code>@treatink/sdk</code> ·
+      <span id="footer-env">fixtures mode — no network</span> ·
+      <span id="footer-source"
+        >every product, price, image, frame and order payload below comes from the real SDK running
+        locally.</span
+      >
     </footer>
 
     <!-- Cart drawer -->
@@ -537,25 +541,33 @@
       import { Treatink } from '/dist/index.js';
 
       // ---- 1. Init the SDK, themed to the Riley's Pets brand -------------------------------------
-      // The SAME page serves fixtures now and staging later. Config resolves in this order:
-      //   1. demo/demo.config.js   — gitignored local file (the browser's "env"; copy from the
+      // The SAME page serves all three demo environments. One demo-level `env` picks a preset;
+      // presets compile down to the SDK's two real knobs (mode + apiBaseUrl), and `label` is the
+      // single string both the hero badge and the footer render — they can never disagree.
+      // Resolution order:
+      //   1. URL param             — ?env=fixtures|staging|live (quick one-off switch)
+      //   2. demo/demo.config.js   — gitignored local file (the browser's "env file"; copy from the
       //                              committed demo.config.example.js). Best place for a staging key.
-      //   2. URL params            — ?mode=live&apiBaseUrl=…  (handy for a quick one-off switch)
-      //   3. prompt fallback       — only if live mode is requested with no key configured.
+      //   3. default               — fixtures: no network, no config needed.
       // Publishable keys (pk_test_/pk_live_) are safe in client code BY DESIGN — that's the whole
       // point of the publishable/secret split. The SECRET sk_ key never appears here; it lives in
       // your SERVER's env for order submission. This page runs on origin http://localhost:5199,
       // the origin registered on the storage-bucket CORS list.
-      const cfg = await import('./demo.config.js').then((m) => m.default ?? m).catch(() => ({})); // no local config → fixtures defaults
+      const ENVS = {
+        fixtures: { mode: 'fixtures', label: 'fixtures mode — no network' },
+        staging: { mode: 'live', apiBaseUrl: 'https://staging.treatinkapi.com', label: 'STAGING' },
+        live: { mode: 'live', apiBaseUrl: 'https://treatinkapi.com', label: 'LIVE' },
+      };
+      const cfg = await import('./demo.config.js').then((m) => m.default ?? m).catch(() => ({})); // no local config → fixtures
       const params = new URLSearchParams(location.search);
-      const mode = (params.get('mode') ?? cfg.mode) === 'live' ? 'live' : 'fixtures';
-      const apiBaseUrl = params.get('apiBaseUrl') || cfg.apiBaseUrl || undefined;
+      const env = ENVS[params.get('env') ?? cfg.env] ?? ENVS.fixtures;
+      const apiBaseUrl = params.get('apiBaseUrl') || cfg.apiBaseUrl || env.apiBaseUrl; // rare override; presets set the right host
 
       let apiKey = cfg.apiKey || 'pk_test_rileys_demo'; // fixtures: any pk_ key works, stays local
-      if (mode === 'live' && !cfg.apiKey) {
+      if (env.mode === 'live' && !cfg.apiKey) {
         apiKey =
           sessionStorage.getItem('tk_demo_key') ||
-          window.prompt('Live mode — paste a publishable key (pk_test_… or pk_live_…):') ||
+          window.prompt(`${env.label} — paste a publishable key (pk_test_… or pk_live_…):`) ||
           '';
         if (apiKey) sessionStorage.setItem('tk_demo_key', apiKey);
       }
@@ -563,7 +575,7 @@
       const tk = Treatink.init({
         apiKey,
         channel: 'rileyspets.com',
-        mode,
+        mode: env.mode,
         ...(apiBaseUrl ? { apiBaseUrl } : {}),
         theme: {
           primary: '#ec6f27',
@@ -575,12 +587,15 @@
       });
       window.tk = tk; // handy for poking at the SDK in devtools
 
-      // Surface the active mode in the hero so it's never ambiguous which backend you're hitting.
-      const liveHost = apiBaseUrl || 'https://treatinkapi.com';
+      // One badge string, rendered in BOTH the hero and the footer, so the two can never disagree.
+      const badge = env.mode === 'live' ? `${env.label} · ${apiBaseUrl}` : env.label;
       document.getElementById('eyebrow').textContent =
-        mode === 'live'
-          ? `${/staging/i.test(liveHost) ? 'STAGING' : 'LIVE'} · ${liveHost}`
-          : 'Powered by @treatink/sdk · fixtures mode';
+        env.mode === 'live' ? badge : `Powered by @treatink/sdk · ${env.label}`;
+      document.getElementById('footer-env').textContent = badge;
+      document.getElementById('footer-source').textContent =
+        env.mode === 'live'
+          ? `every product, price, image, frame and order payload below comes from ${apiBaseUrl}.`
+          : 'every product, price, image, frame and order payload below comes from the real SDK running locally.';
 
       const fmt = (cents, cur = 'USD') =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: cur }).format(cents / 100);
@@ -640,10 +655,10 @@
         page = await tk.products.list({ limit: 50 });
       } catch (err) {
         el('grid').innerHTML = `<div class="loading">Couldn't load the catalog${
-          mode === 'live' ? ` from ${apiBaseUrl || 'the live API'}` : ''
+          env.mode === 'live' ? ` from ${apiBaseUrl}` : ''
         }.<br /><strong>${err.code || err.name}</strong>: ${err.message}${
-          mode === 'live'
-            ? '<br /><br />In live mode this is expected until staging keys + endpoints are wired. Drop <code>?mode=live</code> from the URL to run against fixtures.'
+          env.mode === 'live'
+            ? '<br /><br />Add <code>?env=fixtures</code> to the URL (or clear demo.config.js) to run against fixtures instead.'
             : ''
         }</div>`;
         throw err;
