@@ -228,29 +228,6 @@
         border-radius: 999px;
         backdrop-filter: blur(4px);
       }
-      .personalized-flag {
-        position: absolute;
-        inset: 0;
-        display: none;
-        align-items: flex-end;
-        justify-content: flex-start;
-        padding: 10px;
-        background: linear-gradient(to top, rgba(31, 157, 85, 0.2), transparent 55%);
-      }
-      .personalized-flag span {
-        background: var(--ok);
-        color: #fff;
-        font-size: 11px;
-        font-weight: 700;
-        padding: 4px 9px;
-        border-radius: 999px;
-        display: inline-flex;
-        gap: 5px;
-        align-items: center;
-      }
-      .card.is-personalized .personalized-flag {
-        display: flex;
-      }
       .card-body {
         padding: 14px 15px 16px;
         display: flex;
@@ -403,11 +380,6 @@
         color: #9ca3af;
         font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
         word-break: break-all;
-      }
-      .line .lowres {
-        color: #b45309;
-        font-size: 11px;
-        font-weight: 600;
       }
       .line .rm {
         border: 0;
@@ -601,7 +573,8 @@
         new Intl.NumberFormat('en-US', { style: 'currency', currency: cur }).format(cents / 100);
 
       // ---- 2. Cart state --------------------------------------------------------------------------
-      const cart = new Map(); // sku -> line
+      // Keyed by draftId (unique per save), so multiple designs — even of the same product — coexist.
+      const cart = new Map(); // draftId -> line
       const el = (id) => document.getElementById(id);
 
       function renderCart() {
@@ -619,9 +592,8 @@
             <div class="meta">
               <h4>${l.title}</h4>
               <div class="sku">${l.sku} · ${fmt(l.priceCents, l.currency)}</div>
-              ${l.lowRes ? '<div class="lowres">⚠︎ Low-resolution photo</div>' : ''}
               <div class="draft">draft ${l.draftId}</div>
-              <button class="rm" data-sku="${l.sku}">Remove</button>
+              <button class="rm" data-draft="${l.draftId}">Remove</button>
             </div>
           </div>`,
                 )
@@ -631,10 +603,7 @@
         if (items.length === 0) el('payload-panel').style.display = 'none';
         for (const b of el('cart-items').querySelectorAll('.rm')) {
           b.addEventListener('click', () => {
-            cart.delete(b.dataset.sku);
-            document
-              .querySelector(`.card[data-sku="${b.dataset.sku}"]`)
-              ?.classList.remove('is-personalized');
+            cart.delete(b.dataset.draft);
             renderCart();
           });
         }
@@ -674,7 +643,6 @@
           <div class="thumb">
             <img src="${p.images.catalogImageUrl}" alt="${p.title}" loading="lazy" />
             ${p.animalType ? `<span class="tag">${p.animalType}</span>` : ''}
-            <div class="personalized-flag"><span>✓ Personalized</span></div>
           </div>
           <div class="card-body">
             <h3>${p.title}</h3>
@@ -695,18 +663,14 @@
             sku: product.sku,
             onComplete(result) {
               // Shopper saved a design. Keep draftId (line-item ref) + previewUrl (local thumbnail).
-              cart.set(product.sku, {
+              cart.set(result.draftId, {
                 sku: product.sku,
                 title: product.title,
                 priceCents: product.priceCents,
                 currency: product.currency,
                 draftId: result.draftId,
                 previewUrl: result.previewUrl,
-                lowRes: result.lowRes,
               });
-              document
-                .querySelector(`.card[data-sku="${product.sku}"]`)
-                ?.classList.add('is-personalized');
               renderCart();
               openCart(true);
             },
@@ -729,28 +693,44 @@
           .replace(/: (\d+)/g, ': <span class="n">$1</span>');
 
       el('checkout').addEventListener('click', () => {
-        const lines = [...cart.values()].map((l, i) => ({
+        const items = [...cart.values()];
+        const lines = items.map((l, i) => ({
           externalLineItemId: `line_${i + 1}`,
           draftId: l.draftId,
           quantity: 1,
           unitPriceCents: l.priceCents,
         }));
-        const payload = tk.orders.buildPayload({
-          externalOrderId: 'demo_order_0001',
-          currency: 'USD',
-          paymentStatus: 'paid',
-          customer: { email: 'shopper@example.com', firstName: 'Sam', lastName: 'Rivera' },
-          shippingAddress: {
-            name: 'Sam Rivera',
-            address1: '123 Bark Lane',
-            city: 'Austin',
-            state: 'TX',
-            postalCode: '78701',
-            countryCode: 'US',
-          },
-          lines,
-        });
-        el('payload').innerHTML = highlight(JSON.stringify(payload, null, 2));
+        const subtotalCents = items.reduce((s, l) => s + l.priceCents, 0);
+        const shippingCents = 295;
+        let payloadHtml;
+        try {
+          const payload = tk.orders.buildPayload({
+            externalOrderId: 'demo_order_0001',
+            displayOrderNumber: '#0001',
+            currency: 'USD', // the API accepts USD only
+            recipient: { name: 'Sam Rivera', email: 'shopper@example.com' },
+            destination: {
+              addressLine1: '123 Bark Lane',
+              city: 'Austin',
+              region: 'TX',
+              postalCode: '78701',
+              countryCode: 'US',
+            },
+            amounts: {
+              subtotalCents,
+              discountCents: 0,
+              shippingCents,
+              taxCents: 0,
+              totalCents: subtotalCents + shippingCents,
+            },
+            lines,
+          });
+          payloadHtml = highlight(JSON.stringify(payload, null, 2));
+        } catch (err) {
+          // Surface buildPayload validation errors in the panel instead of dying silently.
+          payloadHtml = `<span class="k">${err.code || err.name}</span>: ${err.message}`;
+        }
+        el('payload').innerHTML = payloadHtml;
         el('payload-panel').style.display = 'block';
         el('payload-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       });
