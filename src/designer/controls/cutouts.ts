@@ -239,6 +239,7 @@ export function mountCutouts(
         photo.className = 'tk-thumb-photo';
         photo.src = photoUrl;
         photo.alt = '';
+        photo.draggable = false; // never a native image drag (owner 2026-07-22)
         thumb.appendChild(photo);
       }
       const img = doc.createElement('img');
@@ -246,6 +247,7 @@ export function mountCutouts(
       img.src = template.maskUrl;
       img.alt = template.title;
       img.loading = 'lazy';
+      img.draggable = false;
       thumb.appendChild(img);
       thumb.addEventListener('click', () => onPick(template));
       return thumb;
@@ -288,6 +290,51 @@ export function mountCutouts(
         dots.appendChild(dot);
       }
     };
+
+    // Mouse drag-to-scroll, like the store's Swiper (owner 2026-07-22): pointer-capture the row,
+    // pan scrollLeft, and suppress the click that would otherwise select a thumb after a drag.
+    // Touch scrolls natively; snap is disabled while dragging so the pan tracks 1:1, then the
+    // browser snaps on release.
+    let dragScroll: { id: number; startX: number; startLeft: number; moved: boolean } | null = null;
+    row.addEventListener('pointerdown', (event) => {
+      if (event.pointerType !== 'mouse') return;
+      dragScroll = {
+        id: event.pointerId,
+        startX: event.clientX,
+        startLeft: row.scrollLeft,
+        moved: false,
+      };
+    });
+    row.addEventListener('pointermove', (event) => {
+      if (!dragScroll || event.pointerId !== dragScroll.id) return;
+      const dx = event.clientX - dragScroll.startX;
+      if (!dragScroll.moved && Math.abs(dx) > 5) {
+        dragScroll.moved = true;
+        row.setPointerCapture(event.pointerId);
+        row.classList.add('tk-drag-scrolling');
+      }
+      if (dragScroll.moved) row.scrollLeft = dragScroll.startLeft - dx;
+    });
+    const endDragScroll = () => {
+      if (!dragScroll) return;
+      const dragged = dragScroll.moved;
+      dragScroll = null;
+      row.classList.remove('tk-drag-scrolling');
+      if (dragged) suppressNextClick = true;
+    };
+    let suppressNextClick = false;
+    row.addEventListener('pointerup', endDragScroll);
+    row.addEventListener('pointercancel', endDragScroll);
+    row.addEventListener(
+      'click',
+      (event) => {
+        if (!suppressNextClick) return;
+        suppressNextClick = false;
+        event.preventDefault();
+        event.stopPropagation(); // a drag is not a selection
+      },
+      { capture: true },
+    );
 
     // active dot follows the scroll position (store: swiper pagination)
     row.addEventListener('scroll', () => {

@@ -341,6 +341,9 @@ export const STYLESHEET = `
   scrollbar-width: none;
 }
 .tk-cutout-row::-webkit-scrollbar { display: none; }
+.tk-cutout-row { cursor: grab; }
+.tk-cutout-row.tk-drag-scrolling { cursor: grabbing; scroll-snap-type: none; }
+.tk-cutout-thumb img { -webkit-user-drag: none; user-select: none; }
 /* Layered thumb: grey backdrop + photo (z0) behind the frame PNG (z1) — store .bg-buttons. */
 .tk-cutout-thumb {
   position: relative;
