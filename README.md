@@ -71,8 +71,22 @@ const order = await submitOrder(payload, {
 
 ## Demo
 
-A full mock storefront (product grid → designer modal → cart) ships in this repo — see
-[Development](#development) to run it locally. A hosted demo is planned for the public release.
+A full mock storefront (product grid → designer modal → cart) ships in this repo. To start it, run
+`npm run dev` and open <http://localhost:5199/demo/storefront.html>. By default it runs in
+**fixtures mode** — fully offline, no keys needed.
+
+To run the demo against **staging**, create a `demo.config.js` file inside the `demo/` folder with
+the following content (the file is gitignored — your key stays local):
+
+```js
+export default {
+  env: 'staging', // or 'production'
+  apiKey: 'pk_test_your_publishable_key_here',
+};
+```
+
+Publishable (`pk_…`) keys only — never put a secret `sk_…` key in browser code; the SDK refuses
+them by design. A hosted demo is planned for the public release.
 
 ## Development
 
