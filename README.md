@@ -52,25 +52,16 @@ const order = await submitOrder(payload, {
 });
 ```
 
-## Documentation
+## Development
 
-| Read this | When you need |
-| --- | --- |
-| [Integration guide](./docs/12-integration-quickstart.md) | The full copy-runnable flow: init → designer → cart line → order body → server submit, plus CSP/SRI snippets and the API reference. CI runs the exact sample on every build. |
-| [Public types](./docs/10-public-types.md) | Every public TypeScript type — config, namespaces, `DesignerResult`, `DraftRecord`, errors, theme & copy keys. |
-| [Security model](./docs/11-security.md) | Key handling, photo privacy guarantees, CSP recommendations, what the build gates enforce. |
-| [API reconciliation](./docs/04-api-reconciliation.md) | How SDK calls map to the real `treatinkapi.com/v1` wire contract, endpoint by endpoint. |
+Working on the SDK itself? Clone the repo, `npm install`, then `npm run dev` and open
+<http://localhost:5199/demo/storefront.html>. `npm run verify` runs the main gates
+(typecheck + lint + tests + bundle budgets).
 
-Key facts worth knowing up front:
-
-- **Keys:** browser code takes publishable `pk_…` keys only (`sk_…` throws `key_scope_violation`);
-  the single secret-key operation (`submitOrder`) lives in the separate `@treatink/sdk/server`
-  entry, and a build gate proves no secret-key path exists in the browser bundle.
-- **Photos:** upload only to Treatink infrastructure, over TLS, and only when the shopper saves.
-  Drafts store references (asset ids + layout), never image bytes; `tk.drafts.clear()` wipes them.
-- **Network:** zero third-party requests — no analytics, trackers, or external fonts (gated in CI).
-- **Theming:** colors, radii, and every visible string are overridable via `theme` and `copy`;
-  accepted photo formats are PNG/JPEG/HEIC up to 25 MB, 12,000 px per side.
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md) — commands, repo layout, commit conventions
+- [`BLUEPRINT.md`](./BLUEPRINT.md) — the build blueprint and ground-truth priority order
+- [`AGENTS.md`](./AGENTS.md) / [`STATE.md`](./STATE.md) — the automated build loop and its ledger
+- [`RELEASING.md`](./RELEASING.md) — release process
 
 ## Demo
 
@@ -87,17 +78,3 @@ export default {
   apiKey: 'pk_test_your_publishable_key_here',
 };
 ```
-
-Publishable (`pk_…`) keys only — never put a secret `sk_…` key in browser code; the SDK refuses
-them by design. A hosted demo is planned for the public release.
-
-## Development
-
-Working on the SDK itself? Clone the repo, `npm install`, then `npm run dev` and open
-<http://localhost:5199/demo/storefront.html>. `npm run verify` runs the main gates
-(typecheck + lint + tests + bundle budgets).
-
-- [`CONTRIBUTING.md`](./CONTRIBUTING.md) — commands, repo layout, commit conventions
-- [`BLUEPRINT.md`](./BLUEPRINT.md) — the build blueprint and ground-truth priority order
-- [`AGENTS.md`](./AGENTS.md) / [`STATE.md`](./STATE.md) — the automated build loop and its ledger
-- [`RELEASING.md`](./RELEASING.md) — release process
