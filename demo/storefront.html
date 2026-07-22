@@ -530,6 +530,7 @@
         staging: { mode: 'live', apiBaseUrl: 'https://staging.treatinkapi.com', label: 'STAGING' },
         live: { mode: 'live', apiBaseUrl: 'https://treatinkapi.com', label: 'LIVE' },
       };
+      ENVS.production = ENVS.live; // README documents env: 'staging' | 'production'
       const cfg = await import('./demo.config.js').then((m) => m.default ?? m).catch(() => ({})); // no local config → fixtures
       const params = new URLSearchParams(location.search);
       const env = ENVS[params.get('env') ?? cfg.env] ?? ENVS.fixtures;
