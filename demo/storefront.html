@@ -346,6 +346,12 @@
         background: none;
         backdrop-filter: none;
         border-bottom: 1px solid var(--line);
+        /* self-contained now that the page-header rule is scoped to body > header */
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 14px 20px;
       }
       .drawer header h2 {
         margin: 0;
