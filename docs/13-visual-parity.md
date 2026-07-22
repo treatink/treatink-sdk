@@ -346,4 +346,4 @@ pixel beyond its row's stated intent, that's a spec bug: stop and re-check again
 | A-07 | Cutout-browser loading skeletons (2026-07-22) | Shimmer chip pills + a 3-up thumb row mirroring the loaded layout; Browse All hidden until templates arrive; cleared on load error. |
 | A-08 | Bottom wave removed (2026-07-22) | The store's decorative `customizer-container:after` wave is not rendered. |
 | A-09 | Stable pagination-dots container (2026-07-22) | `.tk-dots` fixed at the active-bullet height (14px) so the bullet grow animation never shifts the Browse All button. |
-| A-10 | Canvas loading spinner (2026-07-22) | Spinner over the canvas frame until the first cutout (or photo) renders; timed fallback removal if templates fail. |
+| A-10 | Canvas loading shimmer (2026-07-22) | Full-frame lavender shimmer (same blink as the cutout skeletons) until the first cutout or photo renders; timed fallback removal if templates fail. |

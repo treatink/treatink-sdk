@@ -545,26 +545,23 @@ export const STYLESHEET = `
   aspect-ratio: 3 / 4;
   border-radius: var(--tk-radius-control, 10px);
 }
+/* Full-frame shimmer over the canvas — same blink as the cutout skeletons, but tinted from the
+ * panel lavender so it reads on the white frame (the card skeletons shimmer white-on-lavender). */
 .tk-canvas-loading {
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   pointer-events: none;
-}
-@keyframes tk-spin { to { transform: rotate(360deg); } }
-.tk-spinner {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 4px solid var(--tk-panel, #e2e6ff);
-  border-top-color: var(--tk-primary, #a99cdf);
-  animation: tk-spin 0.9s linear infinite;
+  background: linear-gradient(
+    90deg,
+    rgba(226, 230, 255, 0.35) 25%,
+    rgba(226, 230, 255, 0.75) 50%,
+    rgba(226, 230, 255, 0.35) 75%
+  );
+  background-size: 200% 100%;
 }
 @media (prefers-reduced-motion: reduce) {
   .tk-skeleton { animation: none; background: rgba(255, 255, 255, 0.7); }
-  .tk-spinner { animation-duration: 2.5s; }
+  .tk-canvas-loading { animation: none; background: rgba(226, 230, 255, 0.5); }
 }
 
 /* Personalization text: store pet-name card (docs/13 §5.2) — centered column, native 16px

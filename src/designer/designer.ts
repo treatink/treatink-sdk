@@ -385,15 +385,11 @@ export function openDesigner(context: DesignerContext, options: DesignerOptions)
   canvas.setAttribute('aria-label', copy.headerTitle);
   frame.appendChild(canvas);
   // Canvas loading state (owner 2026-07-22): visible until the first cutout renders (live
-  // templates take a beat) — a spinner so the empty frame reads as "loading", not broken.
+  // templates take a beat) — a full-frame shimmer, same treatment as the cutout skeletons.
   const canvasLoading = document.createElement('div');
-  canvasLoading.className = 'tk-canvas-loading';
+  canvasLoading.className = 'tk-canvas-loading tk-skeleton';
   canvasLoading.setAttribute('role', 'status');
   canvasLoading.setAttribute('aria-label', copy.headerTitle);
-  const spinner = document.createElement('span');
-  spinner.className = 'tk-spinner';
-  spinner.setAttribute('aria-hidden', 'true');
-  canvasLoading.appendChild(spinner);
   frame.appendChild(canvasLoading);
   handles.preview.appendChild(frame);
 
