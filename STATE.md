@@ -78,9 +78,9 @@ gate passed, not blocked.
 | ID | Status | depends_on | Title | Note |
 |---|---|---|---|---|
 | P4-T01 | done | P3 exit | HttpTransport (catalog + orders) | real documented paths |
-| P4-T02 | blocked | P4-T01 | Live assets upload (session/asset reconciliation) | **expected blocker** — storage-CORS/staging |
-| P4-T03 | todo | P4-T01 | Live templates | **expected blocker** — endpoint missing |
-| P4-T04 | todo | P4-T01 | CORS verification | **expected blocker** — API policy |
+| P4-T02 | blocked | P4-T01 | Live assets upload | SDK wired ✅; staging `/v1/assets` returns 503 (storage backing unprovisioned — infra) |
+| P4-T03 | done | P4-T01 | Live templates | staging green 2026-07-22 (`test:staging`, 3 browsers) |
+| P4-T04 | done | P4-T01 | CORS verification | staging green 2026-07-22 — cross-origin pk calls, 3 engines |
 | P4-T05 | todo | P4-T01 | API-docs update pass | docs deliverable |
 | P4-T06 | done | P4-T01 | SRI + CSP + privacy guidance | |
 | P4-T07 | todo | P4-T01, P4-T06 | Publish + Riley's pilot | may run hybrid if T02–T04 parked |
@@ -113,23 +113,20 @@ _None yet._ When a task blocks, add an entry here (template — `AGENTS.md` §5)
 - Safe to skip ahead? yes/no — which tasks remain runnable meanwhile
 ```
 
-### P4-T02 — Live asset upload (two-step, against real storage)   (blocked)
-- What I tried: HttpTransport ships for the live catalog paths (P4-T01). Its asset methods
-  (`declareAsset`/`putAssetBytes`/`finalizeAsset`) are present but reject with a "wired in P4-T02"
-  notice; the declare→PUT→finalize wiring itself is straightforward. The task's value, though, is
-  validating the **browser PUT to real presigned object storage** — which a mock cannot prove.
-- Why it's blocked: the gate is `npm run test:e2e -- http-assets` **(staging)** — deliberately
-  staging-only (unlike P4-T01, whose gate allows a contract-mock). No staging `/v1/assets` endpoint
-  and no storage-bucket CORS for channel origins exist in this environment (GP-02, backend/infra;
-  phase `P4-T02` note; `docs/04` §2.3). Passing this against a mock would fake the one thing the gate
-  exists to check, so per `AGENTS.md` §0.4/§5 it parks.
-- What would unblock it: a staging `/v1/assets` (declare→PUT→finalize) reachable, **and**
-  storage-bucket CORS deployed for registered channel origins (GP-02). Then wire the three calls in
-  HttpTransport and validate the real browser PUT against staging.
-- Safe to skip ahead? **yes** — `P4-T06` (SRI+CSP+privacy, machine-gated) and `P4-T05` (docs) are
-  runnable and independent; the fixtures asset flow (declare→PUT→finalize → local object URL) covers
-  the pipeline meanwhile (P3 e2e). `P4-T03`/`P4-T04` are also expected blockers; `P4-T07` may run
-  hybrid/fixtures-backed while these are parked.
+### P4-T02 — Live asset upload (two-step, against real storage)   (blocked — server-side only)
+- What I tried (2026-07-22): HttpTransport fully wires the flow (declare → presigned PUT →
+  finalize) and `npm run test:staging` exercises it with REAL keys from the harness origin on
+  3 browser engines. Catalog/templates/CORS on the same run are GREEN.
+- Why it's blocked: staging `POST /v1/assets` itself returns **503 service_unavailable**
+  (envelope `request_id: req_409abe48290a43b9989f02a788cbe66e`) — the personalization-media
+  storage backing (bucket/credentials) is not provisioned on staging. The SDK request is
+  well-formed; the failure is before any presigned URL is issued, so the browser-PUT/storage-CORS
+  question is still unproven.
+- What would unblock it: infra provisions staging object storage for the media module (and bucket
+  CORS for the browser PUT). Then: `TREATINK_PK=… npm run test:staging` — the asset test is the
+  gate, no SDK changes expected.
+- Safe to skip ahead? **yes** — everything else in P4 is done or human-gated; fixtures cover the
+  asset pipeline meanwhile.
 
 Pre-identified blockers — status after the 2026-07-22 backend pull (see `docs/04` §1 UPDATE):
 - **P4 order submit** — ✅ `POST /v1/orders` now EXISTS (sk-only, Idempotency-Key required, strict
@@ -211,3 +208,6 @@ _Newest last. One line per completed task or phase transition:_
   moved to the strict wire shape (recipient/destination/amounts; personalization = asset ids +
   cutout + pet_name); base URL → treatinkapi.com; staging rig added (test:staging, env-gated);
   full suite 162 unit + 234 e2e green (+9 staging skipped pending real keys)
+- P4-T03 + P4-T04 done — REAL staging run with issued pk/sk: live templates + cross-origin machine
+  CORS green on chromium/webkit/mobile; HttpTransport asset flow wired (P4-T02 SDK side complete;
+  staging /v1/assets 503 — storage backing unprovisioned, req_409abe48290a43b9989f02a788cbe66e)
