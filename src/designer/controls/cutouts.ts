@@ -285,7 +285,8 @@ export function mountCutouts(
         dot.setAttribute('aria-label', `${i + 1} / ${pages}`);
         dot.setAttribute('aria-current', String(i === 0));
         dot.addEventListener('click', () => {
-          row.scrollTo({ left: i * row.clientWidth, behavior: 'smooth' });
+          // page stride = clientWidth + the 10px gap between page boundaries (store spaceBetween)
+          row.scrollTo({ left: i * (row.clientWidth + 10), behavior: 'smooth' });
         });
         dots.appendChild(dot);
       }
@@ -338,7 +339,15 @@ export function mountCutouts(
 
     // active dot follows the scroll position (store: swiper pagination)
     row.addEventListener('scroll', () => {
-      const page = row.clientWidth > 0 ? Math.round(row.scrollLeft / row.clientWidth) : 0;
+      const stride = row.clientWidth + 10;
+      // A partial last page clamps at max scroll below the last stride — count it as the last page.
+      const maxScroll = row.scrollWidth - row.clientWidth;
+      const atEnd = maxScroll > 0 && maxScroll - row.scrollLeft <= 1;
+      const page = atEnd
+        ? dots.children.length - 1
+        : row.clientWidth > 0
+          ? Math.round(row.scrollLeft / stride)
+          : 0;
       [...dots.children].forEach((dot, i) => dot.setAttribute('aria-current', String(i === page)));
     });
 

@@ -342,6 +342,8 @@ export const STYLESHEET = `
 }
 .tk-cutout-row::-webkit-scrollbar { display: none; }
 .tk-cutout-row { cursor: grab; }
+/* Page steps of 3, like the store's slidesPerGroup=3: only every 3rd thumb is a snap point. */
+.tk-cutout-row .tk-cutout-thumb:nth-child(3n + 1) { scroll-snap-align: start; }
 .tk-cutout-row.tk-drag-scrolling { cursor: grabbing; scroll-snap-type: none; }
 .tk-cutout-thumb img { -webkit-user-drag: none; user-select: none; }
 /* Layered thumb: grey backdrop + photo (z0) behind the frame PNG (z1) — store .bg-buttons. */
@@ -349,7 +351,6 @@ export const STYLESHEET = `
   position: relative;
   flex: 0 0 calc(33.333% - 7px);
   aspect-ratio: 3 / 4;
-  scroll-snap-align: start;
   padding: 0;
   border: 1px solid #ffffff;
   border-radius: var(--tk-radius-control, 10px);
