@@ -56,3 +56,4 @@ Thumbs.db
 
 # Local demo config (holds a staging publishable key); template is demo/demo.config.example.js
 demo/demo.config.js
+*.tgz
