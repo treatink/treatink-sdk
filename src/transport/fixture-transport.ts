@@ -283,6 +283,43 @@ const EMPTY_DATASET: FixtureDataset = {
   cutoutLabels: [],
 };
 
+/**
+ * Fixture demo assets (catalog images + cutout masks) are referenced in the dataset by
+ * root-absolute paths (`/fixtures/…`). A partner who installs the package has nothing serving
+ * those paths, so at runtime we resolve them against the public repo on jsDelivr — a CORS-enabled
+ * CDN — making fixtures mode render from any origin with zero setup, cross-origin like the live API.
+ *
+ * The SDK's own demo, e2e harness, and unit tests serve/expect `/fixtures/*` locally and set
+ * `globalThis.__treatinkFixtureAssetBase = ''` to keep the paths relative (hermetic, offline).
+ */
+const DEFAULT_FIXTURE_ASSET_BASE = 'https://cdn.jsdelivr.net/gh/treatink/treatink-sdk@main';
+
+function fixtureAssetBase(): string {
+  const override = (globalThis as { __treatinkFixtureAssetBase?: unknown })
+    .__treatinkFixtureAssetBase;
+  return typeof override === 'string' ? override : DEFAULT_FIXTURE_ASSET_BASE;
+}
+
+function rewriteFixtureUrls(value: unknown, base: string): unknown {
+  if (typeof value === 'string') {
+    return value.startsWith('/fixtures/') ? base + value : value;
+  }
+  if (Array.isArray(value)) {
+    return value.map((v) => rewriteFixtureUrls(v, base));
+  }
+  if (value !== null && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) out[k] = rewriteFixtureUrls(v, base);
+    return out;
+  }
+  return value;
+}
+
+/** Deep, non-mutating rewrite of `/fixtures/…` asset paths to absolute URLs under `base`. */
+function absolutizeFixtureAssets<T>(value: T, base: string): T {
+  return base ? (rewriteFixtureUrls(value, base) as T) : value;
+}
+
 /** cur_fx_ cursors survive one page fetch to the next; the fixture set is small enough to scan. */
 const FULL_PAGE: PageParamsWire = { limit: 100 };
 
@@ -319,9 +356,11 @@ export class FixtureTransport implements Transport {
    * ~250 KB of catalog JSON stays out of the loader chunk (docs/06 §2 budget).
    */
   #dataset(): Promise<FixtureDataset> {
-    this.#datasetPromise ??= this.#dataOverride
-      ? Promise.resolve({ ...EMPTY_DATASET, ...this.#dataOverride })
-      : import('../catalog/fixture-dataset.js').then((m) => m.dataset);
+    this.#datasetPromise ??= (
+      this.#dataOverride
+        ? Promise.resolve({ ...EMPTY_DATASET, ...this.#dataOverride })
+        : import('../catalog/fixture-dataset.js').then((m) => m.dataset)
+    ).then((ds) => absolutizeFixtureAssets(ds, fixtureAssetBase()));
     return this.#datasetPromise;
   }
 

@@ -4,6 +4,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Treatink SDK e2e harness</title>
+    <!-- Harness serves /fixtures/* locally — keep fixture asset URLs relative (hermetic, offline). -->
+    <script>
+      globalThis.__treatinkFixtureAssetBase = '';
+    </script>
   </head>
   <body>
     <h1>Treatink SDK e2e harness</h1>

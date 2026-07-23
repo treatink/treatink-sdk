@@ -40,6 +40,28 @@ describe('channel (docs/08 §1)', () => {
   });
 });
 
+describe('fixture asset resolution', () => {
+  // The setup file pins __treatinkFixtureAssetBase='' (local). Partners get the CDN default.
+  afterEach(() => {
+    (globalThis as Record<string, unknown>).__treatinkFixtureAssetBase = '';
+  });
+
+  it('keeps asset paths relative when the base override is empty (local/hermetic)', async () => {
+    const t = new FixtureTransport();
+    const page = await t.catalogCutoutLabels();
+    expect(page.data[0]!.mask.url).toMatch(/^\/fixtures\/cutouts\//);
+  });
+
+  it('resolves asset paths against the jsDelivr CDN by default (partner runtime)', async () => {
+    delete (globalThis as Record<string, unknown>).__treatinkFixtureAssetBase;
+    const t = new FixtureTransport();
+    const page = await t.catalogCutoutLabels();
+    expect(page.data[0]!.mask.url).toMatch(
+      /^https:\/\/cdn\.jsdelivr\.net\/gh\/treatink\/treatink-sdk@main\/fixtures\/cutouts\//,
+    );
+  });
+});
+
 describe('catalog pagination (docs/08 §0 CatalogPage)', () => {
   it('pages with default limit 20 and cursor round-trip', async () => {
     const t = new FixtureTransport({ data: { products: products(25) } });
