@@ -4,9 +4,9 @@
 product personalization: a native modal designer (photo upload, cutout selection, positioning,
 pet-name text) plus a typed, publishable-key API client.
 
-> The SDK runs end-to-end in **fixtures mode** (no backend, no network, deterministic ids) — the
-> default, so you can integrate and demo fully offline. Live catalog + order submission are
-> available behind `mode: 'live'`.
+> The SDK runs end-to-end in **fixtures mode** (a bundled demo catalog, no backend and no API
+> keys) — the default, so you can integrate and try the flow before provisioning. Live catalog +
+> order submission are available behind `mode: 'live'`.
 
 📚 **Documentation:** <https://sdk-docs.treatink.com>
 
@@ -17,14 +17,14 @@ pet-name text) plus a typed, publishable-key API client.
 **For bundled apps:** install the release tarball directly by URL:
 
 ```sh
-npm install https://github.com/treatink/treatink-sdk/releases/download/v0.1.0/treatink-sdk-0.1.0.tgz
+npm install https://github.com/treatink/treatink-sdk/releases/download/v0.1.1/treatink-sdk-0.1.1.tgz
 ```
 
-Alternatively, download `treatink-sdk-0.1.0.tgz` from the
+Alternatively, download `treatink-sdk-0.1.1.tgz` from the
 [releases page](https://github.com/treatink/treatink-sdk/releases) and install the local file:
 
 ```sh
-npm install ./treatink-sdk-0.1.0.tgz
+npm install ./treatink-sdk-0.1.1.tgz
 ```
 
 Either way the package name is unchanged: `import { Treatink } from '@treatink/sdk'`.

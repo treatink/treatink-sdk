@@ -26,6 +26,10 @@ infrastructure, and clients install with a plain `npm install <tarball>`:
    Put the SRI `integrity` snippet and the per-file hashes from the dry-run manifest in the
    release notes.
 5. Never commit `.tgz` files to git — they live only as release assets.
+6. **Push `main` (including `fixtures/`).** Fixtures-mode demo assets (catalog images + cutout
+   masks) are served to partners from the public repo via jsDelivr
+   (`https://cdn.jsdelivr.net/gh/treatink/treatink-sdk@main/fixtures/…`), so they must be on the
+   pushed `main` branch — they are intentionally *not* in the tarball.
 
 Clients then run
 `npm install https://github.com/<org>/<repo>/releases/download/vX.Y.Z/treatink-sdk-X.Y.Z.tgz`
