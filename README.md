@@ -20,8 +20,8 @@ pet-name text) plus a typed, publishable-key API client.
 npm install https://github.com/treatink/treatink-sdk/releases/download/v0.1.0/treatink-sdk-0.1.0.tgz
 ```
 
-If you can't reach the URL anonymously (private repo), download `treatink-sdk-0.1.0.tgz` from the
-release page while signed in to GitHub, then:
+Alternatively, download `treatink-sdk-0.1.0.tgz` from the
+[releases page](https://github.com/treatink/treatink-sdk/releases) and install the local file:
 
 ```sh
 npm install ./treatink-sdk-0.1.0.tgz
