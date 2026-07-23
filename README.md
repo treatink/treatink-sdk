@@ -76,9 +76,16 @@ Full guides and API reference live at **<https://sdk-docs.treatink.com>**:
 
 ## Demo
 
-A full mock storefront (product grid → designer modal → cart) ships in this repo. To start it, run
-`npm run dev` and open <http://localhost:5199/demo/storefront.html>. By default it runs in
-**fixtures mode** — fully offline, no keys needed.
+Want to see the designer in action before integrating? A full mock storefront (product grid →
+designer modal → cart) ships in this repo:
+
+```sh
+git clone git@github.com:treatink/treatink-sdk.git && cd treatink-sdk
+npm install
+npm run dev    # then open http://localhost:5199/demo/storefront.html
+```
+
+By default it runs in **fixtures mode** — fully offline, no keys needed.
 
 To run the demo against **staging**, create a `demo.config.js` file inside the `demo/` folder with
 the following content (the file is gitignored — your key stays local):
