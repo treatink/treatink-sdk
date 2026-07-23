@@ -9,7 +9,7 @@
 export interface TreatinkConfig {
   /** Publishable only: 'pk_test_…' | 'pk_live_…'. A secret ('sk_…') throws key_scope_violation. */
   apiKey: string;
-  /** Registered storefront hostname, e.g. 'rileyspets.com'. Used SDK-side; NOT sent as a header. */
+  /** Registered storefront hostname, e.g. 'petshop.example.com'. Used SDK-side; NOT sent as a header. */
   channel: string;
   /** Default 'fixtures' until the live API is wired (docs/09). */
   mode?: 'live' | 'fixtures';
