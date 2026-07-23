@@ -40,7 +40,7 @@ import { Treatink } from '@treatink/sdk';
 
 const tk = Treatink.init({
   apiKey: 'pk_test_quickstart', // publishable key only — sk_… keys throw
-  channel: 'rileyspets.com',
+  channel: 'petshop.example.com',
   mode: 'fixtures',
 });
 
@@ -60,7 +60,7 @@ import { submitOrder } from '@treatink/sdk/server';
 
 const order = await submitOrder(payload, {
   secretKey: process.env.TREATINK_SECRET_KEY,
-  channel: 'rileyspets.com',
+  channel: 'petshop.example.com',
 });
 ```
 
