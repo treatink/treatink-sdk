@@ -18,11 +18,13 @@ infrastructure, and clients install with a plain `npm install <tarball>`:
    npm run build
    npm pack                      # → treatink-sdk-X.Y.Z.tgz
    ```
-4. Create the release with the tarball + browser bundle attached:
+4. Create the release with the tarball + the full browser bundle attached (`index.js` imports its
+   sibling chunks by relative path, so every runtime `.js` file must ship):
    ```sh
-   gh release create vX.Y.Z ./treatink-sdk-X.Y.Z.tgz ./dist/index.js --title "vX.Y.Z"
+   gh release create vX.Y.Z ./treatink-sdk-X.Y.Z.tgz ./dist/*.js --title "vX.Y.Z"
    ```
-   Put the SRI `integrity` snippet from the dry-run manifest in the release notes.
+   Put the SRI `integrity` snippet and the per-file hashes from the dry-run manifest in the
+   release notes.
 5. Never commit `.tgz` files to git — they live only as release assets.
 
 Clients then run

@@ -29,8 +29,9 @@ npm install ./treatink-sdk-0.1.0.tgz
 
 Either way the package name is unchanged: `import { Treatink } from '@treatink/sdk'`.
 
-**Script tag (no build step):** each release also attaches the browser ESM bundle. Download it,
-self-host it with your storefront's static assets, and pin it with the SRI hash from the release
+**Script tag (no build step):** each release also attaches the browser bundle — `index.js` plus
+its companion chunk files. `index.js` imports the chunks by relative path, so self-host the whole
+set together in one directory, load only `index.js`, and pin it with the SRI hash from the release
 notes.
 
 ## Quickstart
