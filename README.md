@@ -10,16 +10,31 @@ pet-name text) plus a typed, publishable-key API client.
 
 ## Install
 
-> **Not yet published.** `@treatink/sdk` is not on npm yet — the command below is what the first
-> public release will look like. Until then, work from this repo: `npm install && npm run build`
-> produces the package in `dist/` (usable via `npm link` or a file: dependency).
+`@treatink/sdk` is distributed as a versioned package attached to **GitHub Releases** (it is not on
+the public npm registry yet — moving to npm later requires no code changes for integrators).
+
+**npm (bundled apps):** install the release tarball directly by URL:
 
 ```sh
-npm install @treatink/sdk   # after the first public release
+npm install https://github.com/treatink/treatink-sdk/releases/download/v0.1.0/treatink-sdk-0.1.0.tgz
 ```
 
-A script-tag build (CDN + SRI-pinned) will ship alongside the npm release for storefronts without
-a build step.
+If you can't reach the URL anonymously (private repo), download `treatink-sdk-0.1.0.tgz` from the
+release page while signed in to GitHub, then:
+
+```sh
+npm install ./treatink-sdk-0.1.0.tgz
+```
+
+Either way the package name is unchanged: `import { Treatink } from '@treatink/sdk'`.
+
+**Script tag (no build step):** each release also attaches the browser ESM bundle. Download it,
+self-host it with your storefront's static assets, and pin it with the SRI hash from the release
+notes.
+
+Working on the SDK itself? `npm install && npm run build` produces the package in `dist/`
+(usable via `npm link` or a `file:` dependency). See [`RELEASING.md`](./RELEASING.md) for how
+release artifacts are produced.
 
 ## Quickstart
 

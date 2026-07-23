@@ -5,6 +5,31 @@ The dual release (GP-15): the browser loader + lazy chunks go to the CDN at
 and the package (`.` browser + `./server` + types) goes to npm. Both are guarded by the same
 pre-publish gates so a blown budget or a leaked secret-key path blocks the release.
 
+## Current distribution channel: GitHub Releases (pre-npm)
+
+Until the npm/CDN go-live below, versions ship as **GitHub Release assets** — no registry, no
+infrastructure, and clients install with a plain `npm install <tarball>`:
+
+1. Bump `version` in `package.json` (semver). `"private": true` stays — it blocks accidental
+   `npm publish` but not `npm pack`.
+2. `npm run release:dry-run` must be green; keep its manifest (SRI hashes) for the release notes.
+3. Produce the artifacts:
+   ```sh
+   npm run build
+   npm pack                      # → treatink-sdk-X.Y.Z.tgz
+   ```
+4. Create the release with the tarball + browser bundle attached:
+   ```sh
+   gh release create vX.Y.Z ./treatink-sdk-X.Y.Z.tgz ./dist/index.js --title "vX.Y.Z"
+   ```
+   Put the SRI `integrity` snippet from the dry-run manifest in the release notes.
+5. Never commit `.tgz` files to git — they live only as release assets.
+
+Clients then run
+`npm install https://github.com/<org>/<repo>/releases/download/vX.Y.Z/treatink-sdk-X.Y.Z.tgz`
+(or download the asset and install the local file if the repo is private), or self-host
+`dist/index.js` behind a script tag pinned with the published SRI hash.
+
 ## Dry-run (safe, no credentials, runs anywhere)
 
 ```sh

@@ -1,6 +1,6 @@
 {
   "name": "@treatink/sdk",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Embeddable Treatink product personalization: a native modal designer + a publishable-key API client.",
   "type": "module",
   "license": "UNLICENSED",
