@@ -4,16 +4,17 @@
 product personalization: a native modal designer (photo upload, cutout selection, positioning,
 pet-name text) plus a typed, publishable-key API client.
 
-> **Status:** pre-release, private. The SDK runs end-to-end in **fixtures mode** (no backend, no
-> network, deterministic ids) — the default until the live API wiring ships. Live catalog + order
-> submission paths exist behind `mode: 'live'`.
+> The SDK runs end-to-end in **fixtures mode** (no backend, no network, deterministic ids) — the
+> default, so you can integrate and demo fully offline. Live catalog + order submission are
+> available behind `mode: 'live'`.
+
+📚 **Documentation:** <https://sdk-docs.treatink.com>
 
 ## Install
 
-`@treatink/sdk` is distributed as a versioned package attached to **GitHub Releases** (it is not on
-the public npm registry yet — moving to npm later requires no code changes for integrators).
+`@treatink/sdk` is distributed as a versioned package attached to **GitHub Releases**.
 
-**npm (bundled apps):** install the release tarball directly by URL:
+**For bundled apps:** install the release tarball directly by URL:
 
 ```sh
 npm install https://github.com/treatink/treatink-sdk/releases/download/v0.1.0/treatink-sdk-0.1.0.tgz
@@ -31,10 +32,6 @@ Either way the package name is unchanged: `import { Treatink } from '@treatink/s
 **Script tag (no build step):** each release also attaches the browser ESM bundle. Download it,
 self-host it with your storefront's static assets, and pin it with the SRI hash from the release
 notes.
-
-Working on the SDK itself? `npm install && npm run build` produces the package in `dist/`
-(usable via `npm link` or a `file:` dependency). See [`RELEASING.md`](./RELEASING.md) for how
-release artifacts are produced.
 
 ## Quickstart
 
@@ -67,16 +64,14 @@ const order = await submitOrder(payload, {
 });
 ```
 
-## Development
+## Documentation
 
-Working on the SDK itself? Clone the repo, `npm install`, then `npm run dev` and open
-<http://localhost:5199/demo/storefront.html>. `npm run verify` runs the main gates
-(typecheck + lint + tests + bundle budgets).
+Full guides and API reference live at **<https://sdk-docs.treatink.com>**:
 
-- [`CONTRIBUTING.md`](./CONTRIBUTING.md) — commands, repo layout, commit conventions
-- [`BLUEPRINT.md`](./BLUEPRINT.md) — the build blueprint and ground-truth priority order
-- [`AGENTS.md`](./AGENTS.md) / [`STATE.md`](./STATE.md) — the automated build loop and its ledger
-- [`RELEASING.md`](./RELEASING.md) — release process
+- [Quickstart](https://sdk-docs.treatink.com/docs/quickstart) — install, the copy-runnable client flow, order submission
+- [Theming](https://sdk-docs.treatink.com/docs/guides/theming) — match the designer to your storefront
+- [Security & privacy](https://sdk-docs.treatink.com/docs/guides/security) — key discipline, photo handling, CSP
+- [API reference](https://sdk-docs.treatink.com/docs/api/types) — the full typed surface
 
 ## Demo
 
